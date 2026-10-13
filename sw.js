@@ -4,7 +4,7 @@
 //   launch), and uses the saved copy when offline or when the network is too slow.
 // - Font and icons: served from the saved copy (they rarely change).
 // Change VERSION with every release so old copies are cleared.
-const VERSION = 'bellarej-7.0.0';
+const VERSION = 'bellarej-7.1.0';
 const CORE = [
   './',
   './index.html',

@@ -458,12 +458,12 @@
 const TUNING = {
   worldHeight: 640,
   groundHeight: 84,
-  gravity: 1500,          // how fast the stork falls
-  flapVelocity: -470,     // upward speed right after a flap
+  gravity: 1420,          // how fast the bird falls (1500 until the owner's playtest: a little softer now)
+  flapVelocity: -457,     // upward speed right after a flap (with the softer fall, one tap still lifts ~74 units)
   maxFallSpeed: 720,
   scrollSpeed: 150,       // how fast obstacles move left
   obstacleWidth: 72,
-  gapSize: 170,           // height of the opening to fly through
+  gapSize: 180,           // height of the opening to fly through (170 until the owner's playtest)
   obstacleSpacing: 240,   // horizontal distance between obstacles
   firstObstacleAhead: 360,// distance from the stork to the first obstacle
   gapMargin: 70,          // min distance between a gap and the top / ground
@@ -492,7 +492,7 @@ const TUNING = {
   worldCount: 6,          // number of places before the loop starts again
   gapShrinkPerWorld: 6,   // the opening gets this much smaller per world...
   speedUpPerWorld: 8,     // ...and obstacles come this much faster
-  maxDifficulty: 4,       // no harder after the 4th world change (gap 146, speed 182)
+  maxDifficulty: 4,       // no harder after the 4th world change (gap 156, speed 182)
   speedEase: 25,          // speed changes gently (units per second, per second) instead of jumping
 };
 

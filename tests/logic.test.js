@@ -373,7 +373,23 @@ function passGaps(g, n) {
   run(g, 3, 1 / 60, (gg) => { gg.bird.y = 300; gg.bird.vy = 0; for (const o of gg.obstacles) o.gapY = 300; });
   check('P6 new obstacles after the change are Fès style', g.obstacles.some(o => o.world === 1) && old > 0);
   check('P6 every obstacle has a valid place', g.obstacles.every(o => Number.isInteger(o.world) && o.world >= 0 && o.world < g.tuning.worldCount));
-  check('P6 difficulty cap unchanged (opening 146, speed 182)', g.difficulty(9).gap === 146 && g.difficulty(9).speed === 182);
+  check('P6 difficulty cap (opening 156, speed 182 since the Phase 7 tuning)', g.difficulty(9).gap === 156 && g.difficulty(9).speed === 182, g.difficulty(9));
+}
+
+// ---------------- Tuning after the owner's playtest (2026-10-13): "a little easier", gaps felt narrow ----------------
+{
+  const T = L.TUNING;
+  const jump = (v, gr) => (v * v) / (2 * gr);       // how high one tap lifts the bird
+  check('T1 starting opening is 180 (was 170)', T.gapSize === 180);
+  check('T1 each place still shrinks the opening gently (180 -> 156 at most)', T.gapShrinkPerWorld === 6 && T.maxDifficulty === 4);
+  check('T1 softer fall: gravity lower than before (1500)', T.gravity < 1500 && T.gravity >= 1350, T.gravity);
+  check('T1 one tap still lifts the bird about the same height (73.6 ± 1)', Math.abs(jump(T.flapVelocity, T.gravity) - jump(-470, 1500)) <= 1,
+    { now: jump(T.flapVelocity, T.gravity), before: jump(-470, 1500) });
+  check('T1 speed and spacing unchanged', T.scrollSpeed === 150 && T.obstacleSpacing === 240 && T.speedUpPerWorld === 8);
+  // real openings in a run match the new values
+  const g = L.createGame({ random: seeded(70) });
+  g.input(); g.step(0.01);
+  check('T1 the first walls of a run have the 180 opening', g.obstacles.every(o => o.gap === 180), g.obstacles.map(o => o.gap));
 }
 
 module.exports = { L, check, seeded, run, pilot, storageMock, blockedStorage, report };

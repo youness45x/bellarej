@@ -550,6 +550,7 @@ async function backToTitle(page) {
     // A copy of the app in a temporary folder, so the "new version" check can change files safely.
     const APP = ['index.html', 'sw.js', 'manifest.webmanifest', 'fonts/baloo-bhaijaan-2.woff', 'fonts/OFL.txt',
       'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-64.png'];
+    const SW_VERSION = /const VERSION = '([^']+)'/.exec(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8'))[1];
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'bellarej-app-'));
     for (const f of APP) { fs.mkdirSync(path.dirname(path.join(tmp, f)), { recursive: true }); fs.copyFileSync(path.join(ROOT, f), path.join(tmp, f)); }
     const app = await serve(tmp);
@@ -581,7 +582,7 @@ async function backToTitle(page) {
     await page.reload(); await page.waitForFunction(() => window.bellarej && window.bellarej.game);
     check('P7 offline helper is active and controls the page', await G(page, () => !!navigator.serviceWorker.controller));
     const cached = await G(page, async () => { const keys = await caches.keys(); const c = await caches.open(keys[0]); return { keys, urls: (await c.keys()).map(r => new URL(r.url).pathname) }; });
-    check('P7 the game, font and icons are saved on the device', cached.keys.length === 1 && cached.keys[0] === 'bellarej-7.0.0' &&
+    check('P7 the game, font and icons are saved on the device', cached.keys.length === 1 && cached.keys[0] === SW_VERSION &&
       APP.filter(f => f !== 'fonts/OFL.txt' && f !== 'sw.js').every(f => cached.urls.includes('/' + f)), cached);
     await G(page, () => document.fonts.ready);
     check('P7 the game font comes from the game itself (works offline)', await G(page, () => [...document.fonts].some(f => f.family.replace(/"/g, '') === 'Baloo Bhaijaan 2' && f.status === 'loaded')));
@@ -609,14 +610,14 @@ async function backToTitle(page) {
     // (The player closes the app; a new version is published; they open it again with internet.)
     await ctx.close();
     fs.writeFileSync(path.join(tmp, 'index.html'), fs.readFileSync(path.join(tmp, 'index.html'), 'utf8').replace('<title>Bellarej</title>', '<title>Bellarej</title>\n<meta name="bellarej-build" content="check-update">'));
-    fs.writeFileSync(path.join(tmp, 'sw.js'), fs.readFileSync(path.join(tmp, 'sw.js'), 'utf8').replace("const VERSION = 'bellarej-7.0.0';", "const VERSION = 'bellarej-7.0.1-check';"));
+    fs.writeFileSync(path.join(tmp, 'sw.js'), fs.readFileSync(path.join(tmp, 'sw.js'), 'utf8').replace(`const VERSION = '${SW_VERSION}';`, "const VERSION = 'bellarej-update-check';"));
     ctx = await chromium.launchPersistentContext(profile, { ...PHONE });
     page = ctx.pages()[0] || await ctx.newPage(); watch(page);
     await page.goto(app.url); await page.waitForFunction(() => window.bellarej && window.bellarej.game);
     check('P7 update: the new version shows on the next launch', await G(page, () => !!document.querySelector('meta[name="bellarej-build"]')));
     // poll from here: a waitForFunction with an async test counts as true immediately
-    for (let i = 0; i < 40 && (await G(page, () => caches.keys())).join() !== 'bellarej-7.0.1-check'; i++) await sleep(200);
-    check('P7 update: the old saved copy is replaced', (await G(page, () => caches.keys())).join() === 'bellarej-7.0.1-check', await G(page, () => caches.keys()));
+    for (let i = 0; i < 40 && (await G(page, () => caches.keys())).join() !== 'bellarej-update-check'; i++) await sleep(200);
+    check('P7 update: the old saved copy is replaced', (await G(page, () => caches.keys())).join() === 'bellarej-update-check', await G(page, () => caches.keys()));
     check('P7 update: progress survives an update', await G(page, () => window.bellarej.progress.coins === 7));
 
     // Install button (Android / computer): the browser's install offer, opened by our button
