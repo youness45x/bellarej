@@ -1,0 +1,2450 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bellarej</title>
+<!-- APP-HEAD:START (installable app, Phase 7; left out of the Claude preview copy) -->
+<meta name="description" content="Fly a little bird in a fez through Marrakech, Fès, Chefchaouen, the desert, the coast and the night.">
+<meta name="theme-color" content="#2f86d6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bellarej">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preload" href="fonts/baloo-bhaijaan-2.woff" as="font" type="font/woff" crossorigin>
+<!-- APP-HEAD:END -->
+<style>
+  /* FONT:START  The font ships with the game (OFL licence, see fonts/OFL.txt) so it also works offline. */
+  @font-face {
+    font-family: "Baloo Bhaijaan 2";
+    src: url("fonts/baloo-bhaijaan-2.woff") format("woff");
+    font-weight: 600 800; font-style: normal; font-display: swap;
+  }
+  /* FONT:END */
+  /* Phase 6 look, taken from the owner's design sheet: warm Moroccan light, a chunky golden logo,
+     cream "parchment" panels with dark-brown outlines, dark glass buttons over the game.
+     One deliberate look, the same on light and dark hosts. */
+  :root {
+    color-scheme: light;
+    --ink: #2b160b;            /* every outline */
+    --cream: #f8ecd6;          /* panels */
+    --cream-deep: #efdcbc;
+    --label: #e6d1ae;          /* name tags in the shop */
+    --brown: #6b3a1e;
+    --clay: #c8643a;
+    --red: #c4222a;
+    --gold: #f5b52a;
+    --gold-hi: #ffe27a;
+    --orange: #ee7d1a;
+    --green: #1f8a5a;
+    --majorelle: #2f5fc4;
+    --glass: rgba(28, 16, 8, 0.55);
+    --font-display: "Baloo Bhaijaan 2", "Trebuchet MS", system-ui, sans-serif;
+  }
+  [hidden] { display: none !important; } /* hidden panels must never catch taps */
+  html, body { margin: 0; padding: 0; }
+  html, body { height: 100%; overscroll-behavior: none; }
+  body {
+    margin: 0;
+    background: #2f86d6;
+    color: var(--ink);
+    font-family: var(--font-display);
+    overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage {
+    position: relative; height: 100%; width: 100%;
+    touch-action: none; cursor: pointer;
+    background: linear-gradient(#2f86d6, #f7dcb0);
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
+    padding-inline: 16px;
+    text-align: center;
+  }
+  button { font: inherit; pointer-events: auto; cursor: pointer; }
+  button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; box-shadow: 0 0 0 6px var(--ink); }
+
+  /* Big score in the middle, white with a dark outline (as on the sheet) */
+  #score {
+    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 0; right: 0;
+    text-align: center;
+    font-size: 66px; font-weight: 800; line-height: 1;
+    color: #fff;
+    -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill;
+    text-shadow: 0 4px 0 var(--ink);
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+
+  /* Dark glass buttons in the corners: pause (in a run), sound and language (menus).
+     inset-inline-* flips them to the other side in Arabic. */
+  .corner {
+    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px);
+    min-width: 46px; height: 46px; padding: 0 12px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 17px; font-weight: 800; line-height: 1;
+    color: #fff; background: var(--glass);
+    border: 2.5px solid rgba(255, 255, 255, 0.9); border-radius: 13px;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+    z-index: 3;
+  }
+  .corner:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+  #sound { inset-inline-end: 14px; padding: 0; width: 46px; }
+  #lang { inset-inline-start: 14px; }
+  #pause { inset-inline-start: 14px; padding: 0; width: 46px; }
+  .corner svg { width: 24px; height: 24px; }
+  #sound[aria-pressed="true"] .on, #sound[aria-pressed="false"] .off { display: none; }
+
+  /* ---------------- Title screen ---------------- */
+  #ready {
+    justify-content: space-between;
+    padding-block: calc(env(safe-area-inset-top, 0px) + 74px) calc(env(safe-area-inset-bottom, 0px) + 30px);
+  }
+  .logo { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; }
+  #ready h1 { margin: 0; width: min(92vw, 470px); line-height: 0; }
+  #logo-svg {
+    width: 100%; height: auto; max-height: 21vh; overflow: visible;   /* keeps the big title bird clear of the logo */
+    filter: drop-shadow(0 5px 0 rgba(43, 22, 11, 0.55));
+  }
+  #logo-svg text {
+    font-family: var(--font-display); font-weight: 800; font-size: 120px;
+    fill: url(#logo-fill); stroke: var(--ink); stroke-width: 15px; stroke-linejoin: round;
+    paint-order: stroke fill;
+  }
+  .ribbon {
+    position: relative; margin-top: -4px;
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 3px 22px 4px;
+    font-size: clamp(15px, 4.4vw, 21px); font-weight: 800; line-height: 1.25;
+    color: #fff3dc; background: #4a2412;
+    border: 2.5px solid var(--gold); border-radius: 8px;
+    box-shadow: 0 3px 0 var(--ink), inset 0 0 0 2px #4a2412, inset 0 0 0 3.5px #8a5a22;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  :lang(ar) .ribbon { letter-spacing: 0; text-transform: none; }
+  .ribbon .orn { width: 12px; height: 12px; flex: none; }
+
+  .menu { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .stats { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  #play {
+    background: none; border: 0; padding: 4px 18px;
+    font-size: clamp(30px, 8.6vw, 40px); font-weight: 800; line-height: 1.15;
+    color: #fff;
+    -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill;
+    text-shadow: 0 4px 0 var(--ink);
+    letter-spacing: 0.03em; text-transform: uppercase;
+  }
+  #play span { display: inline-block; animation: breathe 1.6s ease-in-out infinite; }
+  :lang(ar) #play { letter-spacing: 0; text-transform: none; }
+  @keyframes breathe { 50% { transform: scale(1.06); } }
+  .tile-star { width: 34px; height: 34px; margin-top: -6px; filter: drop-shadow(0 2px 0 var(--ink)); }
+  .hint {
+    margin: 0; display: none;
+    font-size: 16px; font-weight: 600;
+    color: #fff; background: var(--glass);
+    padding: 2px 14px; border-radius: 999px;
+  }
+  @media (hover: hover) and (pointer: fine) { .hint { display: block; } }
+  /* Install the game as an app (Phase 7) */
+  .install-btn { font-size: 16px; padding: 3px 18px; color: #fff; background: var(--glass); border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35); }
+  .install-btn svg { width: 18px; height: 18px; }
+  .install-hint {
+    margin: 0; max-width: 300px; pointer-events: auto; cursor: default;
+    display: flex; align-items: center; gap: 8px; text-align: start;
+    font-size: 15px; font-weight: 600; line-height: 1.35;
+    color: var(--ink); background: var(--cream);
+    border: 2.5px solid var(--ink); border-radius: 12px; padding: 6px 12px;
+    box-shadow: 0 3px 0 var(--ink);
+  }
+  .install-hint svg { width: 22px; height: 22px; flex: none; color: var(--majorelle); }
+
+  /* Pills: best score with a crown, coins */
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 38px; padding: 0 13px;
+    font-size: 20px; font-weight: 800; line-height: 1;
+    color: #fff; background: var(--glass);
+    border: 2.5px solid rgba(255, 255, 255, 0.85); border-radius: 12px;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pill .lbl { font-weight: 600; font-size: 16px; }
+  .crown { width: 24px; height: 20px; flex: none; }
+  .coin-ico {
+    display: inline-block; flex: none;
+    width: 19px; height: 19px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff2a8, #f5b52a 55%, #d38a12);
+    border: 2.5px solid var(--ink);
+    box-sizing: border-box;
+  }
+  .small-btn {
+    font-size: 19px; font-weight: 800; line-height: 1.2;
+    color: var(--ink); background: var(--cream);
+    border: 3px solid var(--ink); border-radius: 999px;
+    padding: 4px 26px;
+    box-shadow: 0 4px 0 var(--ink);
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .small-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink); }
+  .small-btn:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: 0 4px 0 var(--ink); }
+  .small-btn svg { width: 22px; height: 22px; flex: none; }
+  .big {
+    font-size: 24px; font-weight: 800; line-height: 1.2;
+    color: #fff; background: linear-gradient(#ffcf4a, var(--orange));
+    -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill;
+    border: 3px solid var(--ink); border-radius: 999px;
+    padding: 7px 36px;
+    box-shadow: 0 5px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.45);
+    transition: transform 0.08s, opacity 0.2s;
+  }
+  .big:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.45); }
+  .big:disabled { opacity: 0.5; cursor: default; }
+
+  /* ---------------- In a run ---------------- */
+  #hud-right {
+    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 18px); inset-inline-end: 14px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    pointer-events: none; z-index: 1;
+  }
+  #hud-right .pill { height: 36px; font-size: 19px; padding: 0 11px; }
+  #powers {
+    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 92px); left: 0; right: 0;
+    display: flex; justify-content: center; gap: 10px; pointer-events: none;
+  }
+  #powers .pill { height: 40px; padding: 0 12px 0 6px; }
+  #powers svg { width: 28px; height: 28px; flex: none; }
+  #slow-ring { transition: stroke-dashoffset 0.1s linear; }
+
+  #paused { justify-content: center; gap: 8px; background: rgba(28, 16, 8, 0.45); }
+  #paused h2 { margin: 0; font-size: 48px; color: #fff; -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink); }
+  #paused .note { margin: 0; font-size: 19px; font-weight: 600; color: #fff; background: var(--glass); padding: 2px 16px; border-radius: 999px; }
+
+  /* ---------------- Parchment panels (game over, shop) ---------------- */
+  #over { justify-content: center; }
+  .panel {
+    pointer-events: auto; cursor: default;
+    background: var(--cream);
+    border: 3px solid var(--ink); border-radius: 22px;
+    box-shadow: 0 6px 0 var(--ink), inset 0 0 0 5px var(--cream), inset 0 0 0 6.5px rgba(107, 58, 30, 0.35);
+    padding: 16px 26px 22px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    min-width: min(270px, 100%);
+    box-sizing: border-box;
+  }
+  /* Headings framed by small ornaments: —◆ TITLE ◆— */
+  .orn-title {
+    margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 26px; font-weight: 800; line-height: 1.2; color: var(--ink);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  :lang(ar) .orn-title { letter-spacing: 0; text-transform: none; }
+  .orn-title::before, .orn-title::after {
+    content: ""; flex: none; width: 34px; height: 12px;
+    background:
+      linear-gradient(var(--brown), var(--brown)) center / 100% 2px no-repeat,
+      linear-gradient(45deg, transparent 32%, var(--brown) 33%, var(--brown) 67%, transparent 68%) center / 10px 10px no-repeat;
+  }
+  .label { font-size: 15px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brown); margin-top: 6px; }
+  /* Arabic letters must stay joined: no letter-spacing, no case change */
+  :lang(ar) .label { letter-spacing: 0; text-transform: none; font-size: 17px; }
+  #final { font-size: 58px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--clay); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+  #again { margin-top: 16px; }
+  .panel .row { display: flex; gap: 26px; justify-content: center; margin-top: 4px; }
+  .panel .num { font-size: 28px; font-weight: 800; line-height: 1.1; display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+  .badge {
+    margin-top: 6px; padding: 2px 12px; border-radius: 999px;
+    font-size: 16px; font-weight: 800; color: #fff; background: var(--red);
+    border: 2px solid var(--ink);
+  }
+
+  /* Character shop (Phase 5, six outfits since Phase 6) */
+  #shop {
+    justify-content: center;
+    pointer-events: auto; cursor: default;
+    background: rgba(28, 16, 8, 0.45);
+    padding-block: calc(env(safe-area-inset-top, 0px) + 70px) 16px;
+  }
+  #shop .panel {
+    width: min(560px, 100%); max-height: 100%; overflow-y: auto;
+    padding: 12px 12px 16px; gap: 10px;
+  }
+  .shop-head { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 8px; padding-inline: 4px; box-sizing: border-box; }
+  .shop-head .pill { color: var(--ink); background: var(--cream-deep); border-color: var(--ink); box-shadow: none; height: 34px; }
+  .shop-grid {
+    display: grid; width: 100%; gap: 8px 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .card {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 4px 4px 8px; min-width: 0;
+    border: 2.5px solid transparent; border-radius: 16px;
+  }
+  .card.chosen { border-color: var(--ink); background: #fff7e6; }
+  .card canvas {
+    width: 100%; max-width: 120px; height: 84px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 55%, #fff8ea 0%, #f4e2c3 70%, transparent 71%);
+  }
+  .card .name {
+    font-size: 15px; font-weight: 800; line-height: 1.3;
+    background: var(--label); border-radius: 999px; padding: 1px 10px;
+    max-width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .card .name.long { font-size: 12px; padding-inline: 4px; line-height: 1.6; letter-spacing: -0.01em; }   /* "Chefchaouen" fits whole */
+  .card .small-btn { font-size: 16px; padding: 2px 10px; min-height: 40px; width: 100%; max-width: 128px; gap: 5px; }
+  .card .small-btn.buy { color: #fff; background: var(--majorelle); }
+  .card .small-btn .coin-ico { width: 16px; height: 16px; border-width: 2px; }
+  .card .need { font-size: 12.5px; font-weight: 600; color: var(--brown); min-height: 2.5em; line-height: 1.25; }
+
+  /* World name, shown briefly when the place changes */
+  #world-name {
+    position: absolute; top: 28%; left: 0; right: 0; text-align: center;
+    font-size: 42px; font-weight: 800; color: #fff;
+    -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill;
+    text-shadow: 0 4px 0 var(--ink);
+    pointer-events: none; opacity: 0;
+  }
+  #world-name.show { animation: worldname 1.8s ease-out forwards; }
+  @keyframes worldname {
+    0% { opacity: 0; transform: translateY(10px) scale(0.9); }
+    15%, 70% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: translateY(-8px); }
+  }
+
+  /* Short screens (phone on its side): logo smaller, menu in one row, shop in one row */
+  @media (max-height: 520px) {
+    #ready { padding-block: calc(env(safe-area-inset-top, 0px) + 10px) 16px; }
+    #ready h1 { width: min(52vw, 330px); }
+    #logo-svg { max-height: 34vh; }
+    .ribbon { font-size: 15px; padding: 1px 16px 2px; }
+    #ready .menu { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 14px; }
+    #ready .stats { margin: 0; }
+    #play { font-size: 30px; }
+    .tile-star { display: none; }
+    #ready .hint { flex-basis: 100%; max-width: max-content; }
+    #shop { padding-top: 10px; padding-bottom: 10px; padding-inline: 72px; }   /* clear of the round buttons */
+    #shop .panel { width: min(820px, 100%); padding: 8px 10px 10px; gap: 6px; }
+    .orn-title { font-size: 22px; }
+    .shop-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .card canvas { height: 60px; }
+    .card .need { font-size: 11.5px; }
+    #score { font-size: 54px; top: 8px; }
+    #powers { top: 74px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .big { transition: none; }
+    #play span { animation: none; }
+    #world-name.show { animation-name: worldname-fade; }
+    @keyframes worldname-fade { 0%, 100% { opacity: 0; } 15%, 70% { opacity: 1; } }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- the eight-pointed Moroccan star, reused as a small ornament -->
+    <symbol id="i-star" viewBox="-10 -10 20 20">
+      <path d="M0-9.5 2.7-6.5 6.7-6.7 6.5-2.7 9.5 0 6.5 2.7 6.7 6.7 2.7 6.5 0 9.5-2.7 6.5-6.7 6.7-6.5 2.7-9.5 0-6.5-2.7-6.7-6.7-2.7-6.5Z" fill="#f5b52a" stroke="#2b160b" stroke-width="1.6" stroke-linejoin="round"/>
+      <circle r="2.6" fill="#c4222a" stroke="#2b160b" stroke-width="1.2"/>
+    </symbol>
+    <symbol id="i-crown" viewBox="0 0 24 20">
+      <path d="M2.5 6.5 7.5 11 12 3.5 16.5 11 21.5 6.5 19.5 17h-15Z" fill="#f5b52a" stroke="#2b160b" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="12" cy="3.4" r="1.6" fill="#ffe27a"/><rect x="4.5" y="14" width="15" height="2.4" fill="#d38a12"/>
+    </symbol>
+  </defs>
+</svg>
+<div id="stage" aria-label="Bellarej">
+  <canvas id="game"></canvas>
+  <div id="score" aria-live="off" hidden>0</div>
+  <div id="hud-right" hidden>
+    <span id="hud-best" class="pill"><svg class="crown" aria-hidden="true"><use href="#i-crown"/></svg><span id="hud-best-n">0</span></span>
+    <span id="hud-coins" class="pill"><i class="coin-ico"></i><span id="hud-coin-n">0</span></span>
+  </div>
+  <div id="world-name" aria-live="polite"></div>
+  <div id="powers" hidden>
+    <div id="pw-shield" class="pill" hidden>
+      <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 3l9 3.5v6.5c0 6-4 10-9 12-5-2-9-6-9-12V6.5z" fill="#2f5fc4" stroke="#2b160b" stroke-width="2.2" stroke-linejoin="round"/><path d="M14 9l1.6 3.4 3.4.4-2.5 2.4.7 3.4L14 17l-3.2 1.6.7-3.4-2.5-2.4 3.4-.4z" fill="#f5b52a"/></svg>
+      <span data-t="shield"></span>
+    </div>
+    <div id="pw-slow" class="pill" hidden>
+      <svg viewBox="0 0 28 28" aria-hidden="true">
+        <circle cx="14" cy="14" r="12" fill="#fffaf0" stroke="#e9dcc4" stroke-width="3"/>
+        <circle id="slow-ring" cx="14" cy="14" r="12" fill="none" stroke="#1f8a5a" stroke-width="3" stroke-linecap="round" stroke-dasharray="75.4" stroke-dashoffset="0" transform="rotate(-90 14 14)"/>
+        <path d="M9.5 9h9l-1.4 10.5h-6.2z" fill="#c7781e" stroke="#2b160b" stroke-width="1.6" stroke-linejoin="round"/>
+        <path d="M14.5 9c1-2.6 3.4-3.2 4.6-2.4-1 1.6-2.6 2.4-4.6 2.4z" fill="#3f9a4a"/>
+      </svg>
+      <span id="slow-left">5</span>
+    </div>
+  </div>
+
+  <button id="pause" class="corner" type="button" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4.5" width="4.5" height="15" rx="1.5" fill="currentColor"/><rect x="14" y="4.5" width="4.5" height="15" rx="1.5" fill="currentColor"/></svg>
+  </button>
+  <button id="sound" class="corner" type="button" aria-pressed="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>
+      <g class="on"><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></g>
+      <g class="off"><path d="M17 9l5 6M22 9l-5 6"/></g>
+    </svg>
+  </button>
+  <button id="lang" class="corner" type="button"></button>
+
+  <div class="overlay" id="ready">
+    <div class="logo">
+      <h1><svg id="logo-svg" viewBox="0 0 520 200" role="img"><defs><linearGradient id="logo-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff07e"/><stop offset="0.45" stop-color="#ffc12e"/><stop offset="1" stop-color="#ec6f12"/></linearGradient></defs><text id="logo-text" x="260" y="160" text-anchor="middle" data-t="title"></text><g id="logo-fez" transform="translate(300 34) rotate(12)"><path d="M-26 22 -19 -22 19 -22 26 22Z" fill="#c4222a" stroke="#2b160b" stroke-width="5" stroke-linejoin="round"/><path d="M11 -22 19 -22 26 22 15 22Z" fill="#9a1820"/><ellipse cx="0" cy="-22" rx="19" ry="5.5" fill="#df3a40" stroke="#2b160b" stroke-width="4"/><path d="M0 -24C-14 -30 -26 -18 -30 -2" fill="none" stroke="#2b160b" stroke-width="3.5" stroke-linecap="round"/><path d="M-35 -4-25 -4-27 12-33 12Z" fill="#2b160b"/></g></svg></h1>
+      <div class="ribbon"><svg class="orn" aria-hidden="true"><use href="#i-star"/></svg><span data-t="subtitle"></span><svg class="orn" aria-hidden="true"><use href="#i-star"/></svg></div>
+    </div>
+    <div class="menu">
+      <div class="stats">
+        <span id="best-pill" class="pill" hidden><svg class="crown" aria-hidden="true"><use href="#i-crown"/></svg><span class="lbl" data-t="best"></span><span id="best-ready">0</span></span>
+        <span class="pill"><i class="coin-ico"></i><span id="coins-ready">0</span></span>
+      </div>
+      <button id="play" type="button"><span data-t="play"></span></button>
+      <svg class="tile-star" aria-hidden="true"><use href="#i-star"/></svg>
+      <button id="shop-open" class="small-btn" type="button"><svg aria-hidden="true" viewBox="-12 -14 24 26"><path d="M-9 9-6.5 -9 6.5 -9 9 9Z" fill="#c4222a" stroke="#2b160b" stroke-width="2.2" stroke-linejoin="round"/><ellipse cy="-9" rx="6.5" ry="2" fill="#df3a40" stroke="#2b160b" stroke-width="1.8"/><path d="M0-10C-5-12-9-7-10 0" fill="none" stroke="#2b160b" stroke-width="1.6"/></svg><span data-t="shop"></span></button>
+      <button id="install" class="small-btn install-btn" type="button" hidden><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10.5 12 15.5 17 10.5M5 19.5h14"/></svg><span data-t="install"></span></button>
+      <p id="install-hint" class="install-hint" hidden><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M8 7.5l4-4 4 4M7 10.5H5.5v10h13v-10H17"/></svg><span data-t="iosHint"></span></p>
+      <p class="hint" data-t="hint"></p>
+    </div>
+  </div>
+
+  <div class="overlay" id="shop" hidden>
+    <div class="panel" role="dialog" aria-modal="true" aria-labelledby="shop-title">
+      <div class="shop-head">
+        <h2 id="shop-title" class="orn-title" data-t="shop"></h2>
+        <span class="pill"><i class="coin-ico"></i><span id="shop-coins">0</span></span>
+      </div>
+      <div class="shop-grid" id="shop-grid"></div>
+      <button id="shop-close" class="small-btn" type="button" data-t="back"></button>
+    </div>
+  </div>
+
+  <div class="overlay" id="paused" hidden>
+    <h2 data-t="paused"></h2>
+    <p class="note" data-t="tapToContinue"></p>
+  </div>
+
+  <div class="overlay" id="over" hidden>
+    <div class="panel" role="dialog" aria-labelledby="over-title">
+      <h2 id="over-title" class="orn-title" data-t="gameOver"></h2>
+      <div class="label" data-t="score"></div>
+      <div id="final">0</div>
+      <div id="newbest" class="badge" data-t="newBest" hidden></div>
+      <div class="row">
+        <div><div class="label" data-t="best"></div><div class="num"><svg class="crown" aria-hidden="true"><use href="#i-crown"/></svg><span id="best-over">0</span></div></div>
+        <div><div class="label" data-t="coins"></div><div class="num"><i class="coin-ico"></i><bdi dir="ltr" id="coins-over">+0</bdi></div></div>
+      </div>
+      <button id="again" class="big" type="button" data-t="again"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Bellarej core game logic. No DOM, no drawing: pure state + rules, so it can be tested on its own.
+// World units: the world is always 640 units tall; its width follows the screen shape.
+// Time is in seconds.
+
+const TUNING = {
+  worldHeight: 640,
+  groundHeight: 84,
+  gravity: 1500,          // how fast the stork falls
+  flapVelocity: -470,     // upward speed right after a flap
+  maxFallSpeed: 720,
+  scrollSpeed: 150,       // how fast obstacles move left
+  obstacleWidth: 72,
+  gapSize: 170,           // height of the opening to fly through
+  obstacleSpacing: 240,   // horizontal distance between obstacles
+  firstObstacleAhead: 360,// distance from the stork to the first obstacle
+  gapMargin: 70,          // min distance between a gap and the top / ground
+  maxGapShift: 200,       // max vertical jump between two consecutive gaps (keeps it fair)
+  birdRadius: 15,
+  hitboxScale: 0.85,      // slightly forgiving collisions
+  maxStep: 1 / 30,        // a frame never simulates more than this (tab switches, slow frames)
+  subStep: 1 / 120,       // physics runs in small slices so it behaves the same at 60 or 120 fps
+  restartLockout: 0.45,   // after a crash, ignore taps this long so frantic taps don't skip the result
+
+  // Coins and power-ups (Phase 3)
+  coinChance: 0.7,        // chance that a gap holds a coin
+  powerUpChance: 0.12,    // chance that a gap holds a power-up instead
+  powerUpFirstAt: 4,      // no power-ups in the first few gaps of a run
+  pickupRadius: 13,
+  pickupSpread: 0.5,      // how far from the middle of the gap a pickup may sit (share of the gap)
+  shieldGrace: 1.0,       // after the shield breaks, obstacles can't hurt for this long (time to fly clear)
+  slowDuration: 5,        // slow motion lasts this many real seconds
+  slowFactor: 0.6,        // the world runs at 60% speed during slow motion
+  slowRamp: 0.25,         // seconds to ease into / out of slow motion (no jolt)
+
+  // Changing worlds (Phase 4, places since Phase 6): Marrakech -> Fès -> Chefchaouen -> Desert
+  // -> Coast -> Night -> Marrakech ... every `worldEvery` points.
+  // Each new world is a little harder, up to a cap, so the game never becomes impossible.
+  worldEvery: 20,
+  worldCount: 6,          // number of places before the loop starts again
+  gapShrinkPerWorld: 6,   // the opening gets this much smaller per world...
+  speedUpPerWorld: 8,     // ...and obstacles come this much faster
+  maxDifficulty: 4,       // no harder after the 4th world change (gap 146, speed 182)
+  speedEase: 25,          // speed changes gently (units per second, per second) instead of jumping
+};
+
+function createGame(opts) {
+  opts = opts || {};
+  const t = Object.assign({}, TUNING, opts.tuning || {});
+  const random = opts.random || Math.random;
+
+  const g = {
+    tuning: t,
+    state: 'ready',       // ready | playing | paused | over
+    score: 0,
+    time: 0,
+    overAt: 0,
+    lastFlapAt: -1,       // used by the drawing code for a stronger wing beat after a flap
+    worldWidth: 360,
+    bird: { x: 0, y: 0, vy: 0, r: t.birdRadius },
+    obstacles: [],
+    distance: 0,          // total distance scrolled (drives the scenery layers)
+    events: [],           // 'flap' | 'score' | 'crash' | 'coin' | 'shield' | 'slow' | 'shieldBreak' | 'slowEnd' | 'world'
+    run: 0,               // counts runs, so the page knows when a new one starts
+    coinsThisRun: 0,
+    shield: false,        // shield active: the next hit is absorbed
+    grace: 0,             // seconds left during which obstacles can't hurt (right after the shield breaks)
+    shieldBrokeAt: -1,
+    slowLeft: 0,          // real seconds of slow motion left
+    timeScale: 1,         // 1 = normal speed, slowFactor during slow motion
+    level: 0,             // how many worlds the player has reached this run (0, 1, 2, 3 ...)
+    world: 0,             // which place: 0 Marrakech, 1 Fès, 2 Chefchaouen, 3 Desert, 4 Coast, 5 Night
+    speed: t.scrollSpeed, // current scroll speed (eases towards the target for this level)
+  };
+  let spawned = 0;        // gaps created this run (power-ups only appear after the first few)
+  let nextId = 0;         // each obstacle gets a number so it can be drawn as a minaret or a riad wall
+
+  const playHeight = () => t.worldHeight - t.groundHeight;
+  const birdHomeX = () => Math.min(g.worldWidth * 0.32, 170);
+  const birdHomeY = () => t.worldHeight * 0.42;
+
+  function emit(name) {
+    g.events.push(name);
+    if (g.events.length > 32) g.events.shift(); // never grows without limit if nobody listens
+  }
+
+  function reset() {
+    g.state = 'ready';
+    g.score = 0;
+    g.obstacles = [];
+    g.bird.x = birdHomeX();
+    g.bird.y = birdHomeY();
+    g.bird.vy = 0;
+    g.coinsThisRun = 0;
+    g.shield = false;
+    g.grace = 0;
+    g.slowLeft = 0;
+    g.timeScale = 1;
+    g.level = 0;
+    g.world = 0;
+    g.speed = t.scrollSpeed;
+    spawned = 0;
+  }
+
+  // Difficulty for a level: smaller gap and faster scrolling, capped.
+  function difficulty(level) {
+    const d = Math.min(level, t.maxDifficulty);
+    return { gap: t.gapSize - t.gapShrinkPerWorld * d, speed: t.scrollSpeed + t.speedUpPerWorld * d };
+  }
+  g.difficulty = difficulty;
+
+  function randomGapCenter(prev, gap) {
+    const min = t.gapMargin + gap / 2;
+    const max = playHeight() - t.gapMargin - gap / 2;
+    let lo = min, hi = max;
+    if (prev != null) {
+      lo = Math.max(min, prev - t.maxGapShift);
+      hi = Math.min(max, prev + t.maxGapShift);
+    }
+    return lo + random() * (hi - lo);
+  }
+
+  // What sits in a gap: a coin, a power-up, or nothing. Never two copies of a power-up
+  // on screen, and never one the player already has running.
+  function choosePickup() {
+    const r = random();
+    if (spawned > t.powerUpFirstAt && r < t.powerUpChance) {
+      const onScreen = new Set(g.obstacles.map(o => o.pickup && !o.pickup.taken && o.pickup.type));
+      const options = ['shield', 'slow'].filter(p =>
+        !onScreen.has(p) && !(p === 'shield' && g.shield) && !(p === 'slow' && g.slowLeft > 0));
+      if (options.length) return options[Math.floor(random() * options.length) % options.length];
+      return 'coin';
+    }
+    return r < t.powerUpChance + t.coinChance ? 'coin' : null;
+  }
+
+  function makeObstacle(x, prevGap) {
+    // Each obstacle keeps the gap size of the moment it was made, so a world change
+    // never resizes an opening the player is already flying towards.
+    const gap = difficulty(g.level).gap;
+    const gapY = randomGapCenter(prevGap, gap);
+    spawned++;
+    const type = choosePickup();
+    const pickup = type && {
+      type,
+      y: gapY + (random() - 0.5) * gap * t.pickupSpread,
+      taken: false,
+    };
+    // `world` is the place the obstacle was built in; it keeps that look after a world change.
+    return { id: nextId++, x, gapY, gap, passed: false, pickup, world: g.world };
+  }
+
+  function fillObstacles() {
+    if (g.obstacles.length === 0) {
+      g.obstacles.push(makeObstacle(g.bird.x + t.firstObstacleAhead, null));
+    }
+    let last = g.obstacles[g.obstacles.length - 1];
+    while (last.x + t.obstacleSpacing < g.worldWidth + t.obstacleWidth) {
+      last = makeObstacle(last.x + t.obstacleSpacing, last.gapY);
+      g.obstacles.push(last);
+    }
+    while (g.obstacles.length && g.obstacles[0].x + t.obstacleWidth < -20) g.obstacles.shift();
+  }
+
+  function circleHitsRect(cx, cy, r, x, y, w, h) {
+    if (h <= 0) return false;
+    const nx = Math.max(x, Math.min(cx, x + w));
+    const ny = Math.max(y, Math.min(cy, y + h));
+    const dx = cx - nx, dy = cy - ny;
+    return dx * dx + dy * dy < r * r;
+  }
+
+  function crash() {
+    g.state = 'over';
+    g.overAt = g.time;
+    g.shield = false;
+    g.grace = 0;
+    g.slowLeft = 0;
+    g.timeScale = 1;       // the fall after a crash plays at normal speed
+    emit('crash');
+  }
+
+  // The shield takes the hit instead of the stork. Returns true if it did.
+  function absorbHit() {
+    if (!g.shield) return false;
+    g.shield = false;
+    g.grace = t.shieldGrace;
+    g.shieldBrokeAt = g.time;
+    emit('shieldBreak');
+    return true;
+  }
+
+  function collect(p) {
+    p.taken = true;
+    if (p.type === 'coin') { g.coinsThisRun += 1; emit('coin'); }
+    else if (p.type === 'shield') { g.shield = true; emit('shield'); }
+    else if (p.type === 'slow') { g.slowLeft = t.slowDuration; emit('slow'); }
+  }
+
+  // Slow motion counts down in real seconds, and the world speed eases in and out.
+  function updateSlow(h) {
+    if (g.slowLeft > 0) {
+      g.slowLeft = Math.max(0, g.slowLeft - h);
+      if (g.slowLeft === 0) emit('slowEnd');
+    }
+    const target = g.slowLeft > 0 ? t.slowFactor : 1;
+    const rate = (1 - t.slowFactor) / t.slowRamp * h;
+    if (g.timeScale < target) g.timeScale = Math.min(target, g.timeScale + rate);
+    else g.timeScale = Math.max(target, g.timeScale - rate);
+  }
+
+  function tick(h) {
+    g.time += h;
+    const b = g.bird;
+
+    if (g.state === 'ready') {
+      b.y = birdHomeY() + Math.sin(g.time * 4) * 6;
+      g.distance += t.scrollSpeed * h;
+      return;
+    }
+    if (g.state === 'paused') return;
+
+    if (g.state === 'playing') updateSlow(h);
+    const s = h * g.timeScale;          // world time: shorter than real time during slow motion
+
+    // Physics (also runs after a crash so the stork drops to the ground)
+    b.vy = Math.min(b.vy + t.gravity * s, t.maxFallSpeed);
+    b.y += b.vy * s;
+    if (b.y - b.r < 0) { b.y = b.r; if (b.vy < 0) b.vy = 0; }   // can't escape off the top
+    const groundTop = playHeight();
+    if (b.y + b.r >= groundTop) {
+      b.y = groundTop - b.r;
+      b.vy = 0;
+      if (g.state === 'playing') {
+        if (absorbHit()) b.vy = t.flapVelocity;   // shield bounces the stork off the ground
+        else crash();
+      }
+    }
+    if (g.state !== 'playing') return;
+
+    // Scroll obstacles (speed eases towards this level's target)
+    const target = difficulty(g.level).speed;
+    if (g.speed < target) g.speed = Math.min(target, g.speed + t.speedEase * s);
+    g.distance += g.speed * s;
+    for (const o of g.obstacles) o.x -= g.speed * s;
+    fillObstacles();
+    if (g.grace > 0) g.grace = Math.max(0, g.grace - s);
+
+    const hr = b.r * t.hitboxScale;
+    for (const o of g.obstacles) {
+      const p = o.pickup;
+      if (p && !p.taken) {
+        const dx = b.x - (o.x + t.obstacleWidth / 2), dy = b.y - p.y, rr = b.r + t.pickupRadius;
+        if (dx * dx + dy * dy < rr * rr) collect(p);
+      }
+      const top = o.gapY - o.gap / 2;
+      const bottom = o.gapY + o.gap / 2;
+      if (g.grace <= 0 &&
+          (circleHitsRect(b.x, b.y, hr, o.x, 0, t.obstacleWidth, top) ||
+           circleHitsRect(b.x, b.y, hr, o.x, bottom, t.obstacleWidth, groundTop - bottom))) {
+        if (!absorbHit()) { crash(); return; }
+      }
+      if (!o.passed && o.x + t.obstacleWidth < b.x) {
+        o.passed = true;
+        g.score += 1;
+        emit('score');
+        const level = Math.floor(g.score / t.worldEvery);
+        if (level !== g.level) {
+          g.level = level;
+          g.world = level % t.worldCount;
+          emit('world');
+        }
+      }
+    }
+  }
+
+  function flap() {
+    g.bird.vy = t.flapVelocity; // sets speed, never adds: rapid taps can't launch the stork
+    g.lastFlapAt = g.time;
+    emit('flap');
+  }
+
+  // Public API ---------------------------------------------------------------
+
+  // The one player action: tap / click / Space. Returns what it did.
+  g.input = function () {
+    if (g.state === 'ready') {
+      g.state = 'playing';
+      g.run += 1;
+      fillObstacles();
+      flap();
+      return 'start';
+    }
+    if (g.state === 'playing') {
+      flap();
+      return 'flap';
+    }
+    if (g.state === 'paused') {
+      g.state = 'playing';        // resume without flapping, so the player can get their bearings
+      return 'resume';
+    }
+    if (g.state === 'over') return g.restart() ? 'restart' : 'ignored';
+    return 'ignored';
+  };
+
+  g.canRestart = function () {
+    return g.state === 'over' && g.time - g.overAt >= t.restartLockout;
+  };
+
+  g.restart = function () {
+    if (!g.canRestart()) return false;
+    reset();
+    return true;
+  };
+
+  g.pause = function () {
+    if (g.state === 'playing') { g.state = 'paused'; return true; }
+    return false;
+  };
+
+  g.step = function (dt) {
+    if (!(dt > 0)) return;
+    dt = Math.min(dt, t.maxStep);
+    while (dt > 1e-9) {
+      const h = Math.min(dt, t.subStep);
+      tick(h);
+      dt -= h;
+    }
+  };
+
+  // Hands the sound code everything that happened since the last call.
+  g.takeEvents = function () {
+    const e = g.events;
+    g.events = [];
+    return e;
+  };
+
+  // Screen size changed (rotation, window resize). Only the visible width changes.
+  // The stork keeps its position during a run so it is never teleported into an obstacle.
+  g.setWorldWidth = function (w) {
+    g.worldWidth = Math.max(200, w);
+    if (g.state === 'ready') g.bird.x = birdHomeX();
+    if (g.state === 'playing' || g.state === 'paused') fillObstacles();
+  };
+
+  g.reset = reset;
+  reset();
+  return g;
+}
+
+// Player settings saved on the device. If storage is blocked or broken, the game keeps
+// working with defaults and simply doesn't remember.
+function createSettings(storage) {
+  const KEY = 'bellarej.settings.v1';
+  const defaults = { lang: 'en', muted: false };
+  let data = Object.assign({}, defaults);
+  try {
+    const raw = storage && storage.getItem(KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p && (p.lang === 'en' || p.lang === 'ar')) data.lang = p.lang;
+      if (p && typeof p.muted === 'boolean') data.muted = p.muted;
+    }
+  } catch (e) { /* blocked or corrupted: keep defaults */ }
+
+  function save() {
+    try { if (storage) storage.setItem(KEY, JSON.stringify(data)); return true; }
+    catch (e) { return false; }
+  }
+
+  return {
+    get lang() { return data.lang; },
+    get muted() { return data.muted; },
+    setLang(l) { if (l === 'en' || l === 'ar') { data.lang = l; save(); } },
+    setMuted(m) { data.muted = !!m; save(); },
+  };
+}
+
+// Player progress saved on the device: best score, coins, owned and selected characters.
+// Like settings, it keeps working in memory if storage is blocked.
+// Phase 6: six outfits for the hero (looks only, same size and hitbox).
+const CHARACTERS = [
+  { id: 'classic', price: 0 },
+  { id: 'riad', price: 40 },
+  { id: 'chefchaouen', price: 80 },
+  { id: 'desert', price: 140 },
+  { id: 'night', price: 220 },
+  { id: 'royal', price: 350 },
+];
+// Saves from before Phase 6 used bird names; each old bird becomes the outfit at the same place
+// in the shop, so nobody loses what they paid for.
+const LEGACY_CHARACTERS = { stork: 'classic', hoopoe: 'riad', seagull: 'chefchaouen', falcon: 'desert' };
+
+function createProgress(storage) {
+  const KEY = 'bellarej.progress.v1';
+  const ids = CHARACTERS.map(c => c.id);
+  const data = { best: 0, coins: 0, owned: ['classic'], selected: 'classic' };
+  const modern = (id) => (Object.prototype.hasOwnProperty.call(LEGACY_CHARACTERS, id) ? LEGACY_CHARACTERS[id] : id);
+  const count = (v) => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+  try {
+    const raw = storage && storage.getItem(KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p) {
+        data.best = count(p.best);
+        data.coins = count(p.coins);
+        if (Array.isArray(p.owned)) {
+          for (const old of p.owned) {
+            const id = modern(old);
+            if (ids.includes(id) && !data.owned.includes(id)) data.owned.push(id);
+          }
+        }
+        if (data.owned.includes(modern(p.selected))) data.selected = modern(p.selected);
+      }
+    }
+  } catch (e) { /* blocked or corrupted: start fresh */ }
+
+  function save() {
+    try { if (storage) storage.setItem(KEY, JSON.stringify(data)); return true; }
+    catch (e) { return false; }
+  }
+
+  return {
+    get best() { return data.best; },
+    get coins() { return data.coins; },
+    get owned() { return data.owned.slice(); },
+    get selected() { return data.selected; },
+    owns(id) { return data.owned.includes(id); },
+    addCoins(n) { n = count(n); if (n) { data.coins += n; save(); } },
+    // Returns true when this score beats the best.
+    recordBest(score) {
+      score = count(score);
+      if (score <= data.best) return false;
+      data.best = score; save(); return true;
+    },
+    // 'bought' | 'owned' | 'poor' | 'unknown'. A second tap on Buy finds it owned: charged once.
+    buy(id) {
+      const c = CHARACTERS.find(c => c.id === id);
+      if (!c) return 'unknown';
+      if (data.owned.includes(id)) return 'owned';
+      if (data.coins < c.price) return 'poor';
+      data.coins -= c.price;
+      data.owned.push(id);
+      save();
+      return 'bought';
+    },
+    select(id) {
+      if (!data.owned.includes(id)) return false;
+      data.selected = id; save(); return true;
+    },
+  };
+}
+
+if (typeof module !== 'undefined') module.exports = { createGame, createSettings, createProgress, CHARACTERS, LEGACY_CHARACTERS, TUNING };
+
+</script>
+
+<script>
+(function () {
+  // ---------------------------------------------------------------------------
+  // Words (English + Arabic). Arabic flips the menus right-to-left.
+  // ---------------------------------------------------------------------------
+  const TEXT = {
+    en: {
+      title: 'Bellarej', subtitle: 'Fly through Morocco', play: 'Tap to play', hint: 'or press Space',
+      install: 'Install app', iosHint: 'On iPhone or iPad: tap Share, then “Add to Home Screen”.',
+      paused: 'Paused', tapToContinue: 'Tap to continue', pause: 'Pause',
+      gameOver: 'Game over', score: 'Score', again: 'Play again',
+      langButton: 'عربي', langLabel: 'التبديل إلى العربية',
+      mute: 'Mute sound', stage: 'Bellarej game. Tap, click or press Space to fly.',
+      best: 'Best', coins: 'Coins', newBest: 'New best!', shield: 'Shield',
+      worlds: ['Marrakech', 'Fès', 'Chefchaouen', 'Desert', 'Coast', 'Night'],
+      shop: 'Shop', back: 'Back', choose: 'Choose', chosen: 'Chosen', buy: 'Buy',
+      need: (n) => (n === 1 ? 'Need 1 more coin' : `Need ${n} more coins`),
+      names: { classic: 'Classic', riad: 'Riad', chefchaouen: 'Chefchaouen', desert: 'Desert', night: 'Night', royal: 'Royal' },
+    },
+    ar: {
+      title: 'بلّارج', subtitle: 'حلّق عبر المغرب', play: 'انقر للعب', hint: 'أو اضغط مفتاح المسافة',
+      install: 'ثبّت التطبيق', iosHint: 'على الآيفون أو الآيباد: اضغط «مشاركة» ثم «إضافة إلى الشاشة الرئيسية».',
+      paused: 'استراحة', tapToContinue: 'انقر للمتابعة', pause: 'إيقاف مؤقت',
+      gameOver: 'انتهت الجولة', score: 'النتيجة', again: 'العب مجدداً',
+      langButton: 'English', langLabel: 'Switch to English',
+      mute: 'كتم الصوت', stage: 'لعبة بلّارج. انقر أو اضغط مفتاح المسافة للطيران.',
+      best: 'أفضل نتيجة', coins: 'العملات', newBest: 'رقم قياسي جديد!', shield: 'درع',
+      worlds: ['مراكش', 'فاس', 'شفشاون', 'الصحراء', 'الساحل', 'الليل'],
+      shop: 'المتجر', back: 'رجوع', choose: 'اختر', chosen: 'مختار', buy: 'اشترِ',
+      need: (n) => `ينقصك من العملات: ${n}`,
+      names: { classic: 'كلاسيكي', riad: 'رياض', chefchaouen: 'شفشاون', desert: 'صحراوي', night: 'ليلي', royal: 'ملكي' },
+    },
+  };
+
+  const INK = '#2b160b';
+  const GOLD = '#f5b52a';
+
+  // ---------------------------------------------------------------------------
+  // The six places (Phase 6). Each one has its own sky, far layer, town, near layer and ground.
+  // Scenery has no outlines; the things you can hit (walls, the bird) have ink outlines,
+  // so the player always sees what matters.
+  // ---------------------------------------------------------------------------
+  const LOOKS = [
+    { // 0 Marrakech: clear morning, pink Atlas with snow, terracotta medina, the Koutoubia
+      sky: ['#2c84d4', '#7fc3ee', '#f8ddb0'], sun: [0.84, 318, 30, '#fff4cc', 'rgba(255, 244, 200, 0.35)'], cloud: '#ffffff', cloudShade: '#d9e8f5', gulls: 1, stars: 0,
+      far: 'atlas', farC: ['#c79aa0', '#b58591', '#fbf2ee', '#e8c3a2'],
+      town: 'medina', townC: ['#e3965f', '#c97849', '#8f4d2c', '#c8743f', '#a65a2f', '#2f9a7a'],
+      near: 'riad', nearC: ['#cd6a3f', '#a9502d', '#2f5fa8', '#3b7d3e', '#2a6230', '#7a4a2c', '#c0612f'],
+      ground: 'zellige', groundC: ['#d9a46a', '#bf8a52', '#f3e6cc', '#1f8a5a', '#2f5fc4', '#c4222a'],
+    },
+    { // 1 Fès: golden light, olive hills, dense ochre medina with green-tiled roofs
+      sky: ['#3f8fd0', '#9ccde8', '#fbe2b4'], sun: [0.22, 120, 34, '#fff1c2', 'rgba(255, 236, 180, 0.35)'], cloud: '#fffaf0', cloudShade: '#e7dcc8', gulls: 1, stars: 0,
+      far: 'hills', farC: ['#b9a67a', '#a39066', '#cfbb8c', '#e6cfa0'],
+      town: 'fes', townC: ['#e6c493', '#cfa772', '#8a6440', '#1f8a5a', '#16704a', '#d9b27c'],
+      near: 'fesNear', nearC: ['#d8ac72', '#b88a52', '#7a4a2c', '#3b7d3e', '#2a6230', '#1f8a5a', '#16704a'],
+      ground: 'zellige', groundC: ['#cf9c62', '#b1824c', '#f4e8d0', '#1f8a5a', '#d38a12', '#2f5fc4'],
+    },
+    { // 2 Chefchaouen: bright blue sky, green Rif mountains, blue and white town
+      sky: ['#3a8be0', '#8cc9f2', '#e8f4fb'], sun: [0.78, 104, 34, '#fffbe6', 'rgba(255, 255, 230, 0.35)'], cloud: '#ffffff', cloudShade: '#dbe7f4', gulls: 1, stars: 0,
+      far: 'rif', farC: ['#79a56c', '#5f8f5a', '#94bb84', '#c9e0c7'],
+      town: 'chaouen', townC: ['#f3f6fb', '#9cc1ee', '#5d8fdc', '#3e6fc4', '#e9eef6', '#c9603a'],
+      near: 'chaouenNear', nearC: ['#4f86d9', '#3a68b8', '#f3f6fb', '#3b7d3e', '#e0452b', '#c0612f', '#f2c4d0'],
+      ground: 'steps', groundC: ['#7fa9e6', '#5d8fdc', '#eef3fa', '#3e6fc4', '#ffffff', '#c9603a'],
+    },
+    { // 3 Desert: sunset over the dunes, kasbah towers and an oasis
+      sky: ['#6f4f9e', '#f08a52', '#fbd17a'], sun: [0.72, 360, 54, '#ffe08a', 'rgba(255, 170, 90, 0.4)'], cloud: '#ffc9a8', cloudShade: '#e9a184', gulls: 0, stars: 0,
+      far: 'dunes', farC: ['#e8a35c', '#d58945', '#c9763a', '#f3bd76'],
+      town: 'kasbah', townC: ['#a9572f', '#874322', '#5a2a14', '#c06a3c', '#8a4a26', '#3b7d3e'],
+      near: 'oasis', nearC: ['#b9683a', '#97512b', '#6f3a1e', '#2f6a34', '#244f28', '#6a4026', '#c0612f'],
+      ground: 'sand', groundC: ['#e2a560', '#c98a48', '#f0c07e', '#b2733c', '#000000', '#000000'],
+    },
+    { // 4 Coast: the Atlantic, a white town with blue shutters and a lighthouse
+      sky: ['#2f8fdc', '#86c8f0', '#e9f5fb'], sun: [0.2, 108, 34, '#fffbe8', 'rgba(255, 255, 235, 0.4)'], cloud: '#ffffff', cloudShade: '#d6e6f2', gulls: 2, stars: 0,
+      far: 'sea', farC: ['#2e86c6', '#4fb0e0', '#bfe7f7', '#6a9bb8'],
+      town: 'coastTown', townC: ['#f4f2ec', '#d9d5cb', '#2f6fb7', '#c4622f', '#a7c6db', '#8fa9bd'],
+      near: 'harbour', nearC: ['#efe9dc', '#cfc6b4', '#2f6fb7', '#3b7d3e', '#2a6230', '#7a4a2c', '#f5b52a'],
+      ground: 'stone', groundC: ['#e8d8b8', '#cdb994', '#f6eedd', '#2f6fb7', '#b9a47e', '#000000'],
+    },
+    { // 5 Night: Marrakech under the moon, glowing lanterns and lit windows
+      sky: ['#0b1236', '#1d2a63', '#3b3f7a'], sun: [0.24, 104, 30, '#f6f1d8', 'rgba(220, 230, 255, 0.18)'], cloud: 'rgba(150, 165, 215, 0.35)', cloudShade: 'rgba(120, 135, 190, 0.3)', gulls: 0, stars: 1,
+      far: 'atlas', farC: ['#2b3561', '#252e57', '#8f9ac0', '#2e3866'],
+      town: 'nightMedina', townC: ['#3a3f70', '#2f3463', '#ffcd6a', '#d9a35a', '#a8743a', '#1f8a5a'],
+      near: 'riad', nearC: ['#5b4470', '#4a3860', '#3a4fb0', '#1f3f3a', '#183230', '#3a2d3a', '#7a4a3c'],
+      ground: 'zellige', groundC: ['#6c5566', '#584354', '#c9c0bc', '#1f7a5e', '#3b63b2', '#a0352c'],
+      night: 1,
+    },
+  ];
+
+  // Wall styles for obstacles, one per place. They stay light against the sky so they're always easy to see.
+  const WALLS = [
+    { body: '#d67b48', shade: '#b05a30', light: '#ec9b67', line: '#c46a3a', cap: 'tiles', band: 'zellige', feature: 'carpet' },          // Marrakech
+    { body: '#e0b47c', shade: '#bd8d54', light: '#f0cb98', line: '#cfa066', cap: 'tiles', band: 'zellige', feature: 'cedar' },           // Fès
+    { body: '#5d93e2', shade: '#3f6fc0', light: '#a6c8f4', line: '#4f82d2', cap: 'white', band: 'white', feature: 'flowers' },          // Chefchaouen
+    { body: '#cd8450', shade: '#a6612f', light: '#e3a06b', line: '#b9703f', cap: 'merlons', band: 'triangles', feature: 'kasbah' },       // Desert
+    { body: '#f2eee6', shade: '#d3cdc1', light: '#ffffff', line: '#e2dccf', cap: 'blue', band: 'blue', feature: 'shutters' },           // Coast
+    { body: '#c0714a', shade: '#9a5333', light: '#dc9466', line: '#ad6340', cap: 'tiles', band: 'zellige', feature: 'carpet', lit: 1 },   // Night
+  ];
+
+  // Six outfits for the hero (Phase 6). All the same bird underneath: same size, same hitbox.
+  const OUTFITS = {
+    classic: { body: '#8b4b2b', back: '#6f3a20', belly: '#f7e8cf', wing: '#7a3f22', wingEdge: '#552a14', hat: 'fez', hatC: '#c8232c', hatDark: '#9a1820', hatTop: '#e0393f', tassel: INK, scarf: '#d8352a', scarf2: '#a52619' },
+    riad: { body: '#8b4b2b', back: '#6f3a20', belly: '#f7e8cf', wing: '#7a3f22', wingEdge: '#552a14', hat: 'fez', hatC: '#1f8a5a', hatDark: '#146a44', hatTop: '#2fa86f', band: GOLD, tassel: GOLD, scarf: '#1f8a5a', scarf2: '#146a44' },
+    chefchaouen: { body: '#3d70d2', back: '#2b56a8', belly: '#f3f6ff', wing: '#2f60c0', wingEdge: '#1f4596', hat: 'turban', hatC: '#3b74da', hatDark: '#2552ad', dots: '#ffffff', scarf: '#3b74da', scarf2: '#2552ad' },
+    desert: { body: '#8d5a34', back: '#6d4426', belly: '#f7e8cf', wing: '#7a4e2c', wingEdge: '#553519', hat: 'wrap', hatC: '#e6d2a8', hatDark: '#c4ab7e', scarf: '#e6d2a8', scarf2: '#c4ab7e' },
+    night: { body: '#323a70', back: '#242a55', belly: '#e9e7f5', wing: '#272e5c', wingEdge: '#171c40', hat: 'hood', hatC: '#2c3170', hatDark: '#1d2150', stars: GOLD, scarf: '#2c3170', scarf2: '#1d2150' },
+    royal: { body: '#8b4b2b', back: '#6f3a20', belly: '#f7e8cf', wing: '#e3a828', wingEdge: '#a8700e', hat: 'crown', hatC: '#c8232c', hatDark: '#9a1820', hatTop: '#e0393f', band: GOLD, gem: '#2fa3d6', tassel: GOLD, scarf: GOLD, scarf2: '#c8232c' },
+  };
+
+  const stage = document.getElementById('stage');
+  const canvas = document.getElementById('game');
+  const mainCtx = canvas.getContext('2d');
+  let ctx = mainCtx;                 // the drawing helpers draw on whichever canvas is current
+  // During a change of place the new scene is drawn here, then faded in over the old one.
+  const fade = document.createElement('canvas');
+  const fadeCtx = fade.getContext('2d');
+  const ui = {
+    score: document.getElementById('score'),
+    ready: document.getElementById('ready'),
+    paused: document.getElementById('paused'),
+    over: document.getElementById('over'),
+    final: document.getElementById('final'),
+    again: document.getElementById('again'),
+    play: document.getElementById('play'),
+    sound: document.getElementById('sound'),
+    lang: document.getElementById('lang'),
+    pause: document.getElementById('pause'),
+    hudRight: document.getElementById('hud-right'),
+    hudBestN: document.getElementById('hud-best-n'),
+    hudCoinN: document.getElementById('hud-coin-n'),
+    powers: document.getElementById('powers'),
+    pwShield: document.getElementById('pw-shield'),
+    pwSlow: document.getElementById('pw-slow'),
+    slowRing: document.getElementById('slow-ring'),
+    slowLeft: document.getElementById('slow-left'),
+    bestPill: document.getElementById('best-pill'),
+    bestReady: document.getElementById('best-ready'),
+    coinsReady: document.getElementById('coins-ready'),
+    newBest: document.getElementById('newbest'),
+    bestOver: document.getElementById('best-over'),
+    coinsOver: document.getElementById('coins-over'),
+    worldName: document.getElementById('world-name'),
+    shop: document.getElementById('shop'),
+    shopOpen: document.getElementById('shop-open'),
+    shopClose: document.getElementById('shop-close'),
+    shopGrid: document.getElementById('shop-grid'),
+    shopCoins: document.getElementById('shop-coins'),
+    logoSvg: document.getElementById('logo-svg'),
+    logoText: document.getElementById('logo-text'),
+    logoFez: document.getElementById('logo-fez'),
+    install: document.getElementById('install'),
+    installHint: document.getElementById('install-hint'),
+  };
+
+  // Storage access itself can throw in some private modes, so even reaching it is guarded.
+  let storage = null;
+  try { storage = window.localStorage; } catch (e) { storage = null; }
+  const settings = createSettings(storage);
+  const progress = createProgress(storage);
+  const game = createGame();
+  const T = game.tuning;
+
+  // ---------------------------------------------------------------------------
+  // Language
+  // ---------------------------------------------------------------------------
+  // The logo is SVG text (so it gets the golden fill and a thick outline in any language);
+  // its frame is fitted to the word once the font has loaded, and the fez sits on top.
+  function fitLogo() {
+    try {
+      const b = ui.logoText.getBBox();
+      if (!b.width) return;
+      const pad = 16, top = b.y - 46;
+      ui.logoSvg.setAttribute('viewBox', `${b.x - pad} ${top} ${b.width + pad * 2} ${b.y + b.height - top + pad}`);
+      const fx = settings.lang === 'ar' ? b.x + b.width * 0.36 : b.x + b.width * 0.42;
+      ui.logoFez.setAttribute('transform', `translate(${fx} ${b.y + 8}) rotate(12)`);
+    } catch (e) { /* not rendered yet */ }
+  }
+  function applyLanguage() {
+    const lang = settings.lang, t = TEXT[lang];
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.title = t.title;
+    for (const el of document.querySelectorAll('[data-t]')) el.textContent = t[el.dataset.t];
+    ui.logoSvg.setAttribute('aria-label', t.title);
+    ui.lang.textContent = t.langButton;
+    ui.lang.lang = lang === 'ar' ? 'en' : 'ar'; // the button's own word is in the other language
+    ui.lang.setAttribute('aria-label', t.langLabel);
+    ui.sound.setAttribute('aria-label', t.mute);
+    ui.pause.setAttribute('aria-label', t.pause);
+    stage.setAttribute('aria-label', t.stage);
+    fitLogo();
+    if (shopBuilt) renderShop();   // the shop is built further down; on first load it renders when opened
+  }
+  ui.lang.addEventListener('click', () => {
+    settings.setLang(settings.lang === 'ar' ? 'en' : 'ar');
+    applyLanguage();
+  });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLogo);
+
+  // ---------------------------------------------------------------------------
+  // Sound: tiny effects generated in code (no audio files)
+  // ---------------------------------------------------------------------------
+  const sound = (function () {
+    let ac = null, master = null, noise = null;
+    function unlock() {
+      // Phones only allow sound after the player touches the screen, so this runs on each tap.
+      try {
+        if (!ac) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          ac = new AC();
+          master = ac.createGain();
+          master.gain.value = 0.5;
+          master.connect(ac.destination);
+          noise = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.4), ac.sampleRate);
+          const d = noise.getChannelData(0);
+          for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        }
+        if (ac.state === 'suspended') ac.resume();
+      } catch (e) { ac = null; }
+    }
+    function ready() { return ac && ac.state === 'running' && !settings.muted; }
+
+    function tone(type, f0, f1, start, dur, vol) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(f0, start);
+      if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, start + dur);
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(vol, start + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      o.connect(g); g.connect(master);
+      o.start(start); o.stop(start + dur + 0.02);
+    }
+    function hiss(filterType, f0, f1, start, dur, vol) {
+      const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      s.buffer = noise;
+      f.type = filterType; f.Q.value = 1.2;
+      f.frequency.setValueAtTime(f0, start);
+      f.frequency.exponentialRampToValueAtTime(f1, start + dur);
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(vol, start + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      s.connect(f); f.connect(g); g.connect(master);
+      s.start(start); s.stop(start + dur + 0.02);
+    }
+    const effects = {
+      // a soft wing "whoosh"
+      flap(now) { hiss('bandpass', 700, 1900, now, 0.11, 0.55); },
+      // two plucked notes, rising
+      score(now) { tone('triangle', 784, 784, now, 0.12, 0.35); tone('triangle', 1175, 1175, now + 0.07, 0.18, 0.3); },
+      // a dull thump with a puff of dust
+      crash(now) { tone('sine', 190, 45, now, 0.32, 0.9); hiss('lowpass', 1400, 200, now, 0.28, 0.5); },
+      // a bright little "ting"
+      coin(now) { tone('square', 1320, 1320, now, 0.06, 0.12); tone('sine', 1760, 1760, now + 0.05, 0.16, 0.3); },
+      // rising shimmer when the shield goes on
+      shield(now) { tone('sine', 420, 980, now, 0.28, 0.4); tone('triangle', 840, 1960, now + 0.03, 0.25, 0.12); },
+      // the shield cracks: glassy burst
+      shieldBreak(now) { hiss('highpass', 3200, 900, now, 0.22, 0.5); tone('triangle', 660, 180, now, 0.25, 0.35); },
+      // a slow, sinking "wooo" as time slows down
+      slow(now) { tone('triangle', 880, 260, now, 0.55, 0.4); },
+      // quick rise as time speeds back up
+      slowEnd(now) { tone('triangle', 300, 760, now, 0.22, 0.3); },
+      // a soft three-note chime for a new place
+      world(now) { [659, 880, 1175].forEach((f, i) => tone('sine', f, f, now + i * 0.11, 0.35, 0.3)); },
+      // coins tumbling into the till
+      buy(now) { for (let i = 0; i < 4; i++) tone('square', 1320 + i * 220, 1320 + i * 220, now + i * 0.05, 0.07, 0.1); tone('sine', 1760, 1760, now + 0.22, 0.3, 0.3); },
+      // a soft click when choosing an outfit
+      choose(now) { tone('triangle', 900, 1200, now, 0.08, 0.25); },
+    };
+    const played = { flap: 0, score: 0, crash: 0, coin: 0, shield: 0, shieldBreak: 0, slow: 0, slowEnd: 0, world: 0, buy: 0, choose: 0 }; // counted for the automated checks
+    function play(name) {
+      if (!ready() || !effects[name]) return;
+      try { effects[name](ac.currentTime + 0.005); played[name]++; } catch (e) { /* never break the game */ }
+    }
+    return { unlock, play, played, get state() { return ac ? ac.state : 'none'; } };
+  })();
+
+  function applyMute() {
+    ui.sound.setAttribute('aria-pressed', String(settings.muted));
+  }
+  function toggleMute() {
+    settings.setMuted(!settings.muted);
+    applyMute();
+  }
+  ui.sound.addEventListener('click', () => { sound.unlock(); toggleMute(); });
+
+  // ---------------------------------------------------------------------------
+  // Changing places: the new scene fades in over the old one (1.5 s in a run, 1 s back on the title)
+  // ---------------------------------------------------------------------------
+  let sceneWorld = 0, sceneFrom = 0, blendStart = 0, blendDur = 1, blendK = 1;
+  function startBlend(world, seconds, now) {
+    if (blendK < 1 && blendK > 0.5) sceneFrom = sceneWorld;   // a change during a change: fade from what's mostly visible
+    else if (blendK >= 1) sceneFrom = sceneWorld;
+    sceneWorld = world; blendStart = now; blendDur = seconds; blendK = 0;
+  }
+  function updateBlend(now) {
+    if (blendK >= 1) return;
+    blendK = Math.min(1, (now - blendStart) / blendDur);
+    if (blendK >= 1) sceneFrom = sceneWorld;
+  }
+
+  applyLanguage();
+  applyMute();
+  // handy for testing in the browser console
+  window.bellarej = {
+    game, settings, progress, sound, LOOKS, WALLS, OUTFITS,
+    get shopOpen() { return shopIsOpen; }, get blending() { return blendK < 1; },
+    scene: { get world() { return sceneWorld; }, get from() { return sceneFrom; }, get k() { return blendK; } },
+    view: { get tilt() { return tilt; }, get wingPhase() { return wingPhase; }, get heroScale() { return heroScale; }, get heroLift() { return heroLift(); } },
+    art: { drawBird: (c, kind, wing, t) => drawBird(c, kind, wing, t) },
+    get installMode() { return installMode; },
+  };
+
+  // ---------------------------------------------------------------------------
+  // Sizing: the world is 640 units tall; width follows the screen
+  // ---------------------------------------------------------------------------
+  let scale = 1;
+  let wingPhase = 0, tilt = 0, heroScale = 1.9; // bird animation state (it's drawn bigger on the title screen)
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, stage.clientWidth), h = Math.max(1, stage.clientHeight);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    scale = canvas.height / T.worldHeight;
+    game.setWorldWidth(canvas.width / scale);
+  }
+  new ResizeObserver(resize).observe(stage);
+  resize();
+
+  // ---------------------------------------------------------------------------
+  // Input
+  // ---------------------------------------------------------------------------
+  function act() { sound.unlock(); game.input(); }
+  stage.addEventListener('pointerdown', (e) => {
+    sound.unlock();
+    if (shopIsOpen) return;                          // taps in the shop never start a run
+    if (e.target.closest('button, .panel, .install-hint')) return; // buttons do their own thing
+    if (e.button !== undefined && e.button > 0) return;
+    e.preventDefault();
+    act();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (shopIsOpen) {                                 // in the shop, keys work the buttons normally
+      if (e.code === 'Escape') closeShop();
+      else if (e.code === 'KeyM' && !e.repeat) { sound.unlock(); toggleMute(); }
+      return;
+    }
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW' || (e.code === 'Enter' && game.state === 'over')) {
+      e.preventDefault(); // stop page scroll and stop Space from also "clicking" the focused button
+      if (!e.repeat) act();
+    } else if (e.code === 'KeyM' && !e.repeat) {
+      sound.unlock(); toggleMute();
+    } else if ((e.code === 'KeyP' || e.code === 'Escape') && !e.repeat) {
+      game.pause();
+    }
+  });
+  // Phones only count a finger *release* as permission to play sound, so unlock there too.
+  window.addEventListener('pointerup', () => sound.unlock());
+  window.addEventListener('touchend', () => sound.unlock());
+  ui.play.addEventListener('click', () => { if (game.state === 'ready') act(); });
+  ui.again.addEventListener('click', () => { game.restart(); });
+  // The pause button only pauses; it never flaps (buttons don't count as taps on the game).
+  ui.pause.addEventListener('click', () => { sound.unlock(); game.pause(); });
+
+  // Pause when the player leaves (tab switch, app switch)
+  // The best score is also saved when leaving, so closing the tab mid-run keeps it.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { game.pause(); progress.recordBest(game.score); } });
+  window.addEventListener('pagehide', () => progress.recordBest(game.score));
+  window.addEventListener('blur', () => game.pause());
+
+  // ---------------------------------------------------------------------------
+  // Drawing helpers
+  // ---------------------------------------------------------------------------
+  // Same number in → same "random" number out, so scenery repeats exactly as it scrolls.
+  function hash(i, salt) {
+    const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  }
+  const GROUND_TOP = T.worldHeight - T.groundHeight;
+  const TAU = Math.PI * 2;
+
+  // Horseshoe arch (the Moroccan door/window shape), from its top down to bottomY.
+  function archPath(cx, topY, w, bottomY) {
+    const r = w * 0.56, cy = topY + r;
+    const a = Math.acos((w / 2) / r);
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2, bottomY);
+    ctx.lineTo(cx - w / 2, cy + r * Math.sin(a));
+    ctx.arc(cx, cy, r, Math.PI - a, Math.PI * 2 + a);
+    ctx.lineTo(cx + w / 2, bottomY);
+    ctx.closePath();
+  }
+  function circle(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); }
+  function rect(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
+
+  // Calls fn(i, x) for each slot of a repeating layer that is on screen.
+  function eachSlot(W, factor, slotW, fn) {
+    const off = game.distance * factor;
+    const first = Math.floor(off / slotW) - 1;
+    for (let i = first; ; i++) {
+      const x = i * slotW - off;
+      if (x > W + slotW) break;
+      fn(i, x);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shared scenery pieces
+  // ---------------------------------------------------------------------------
+  function drawPalm(x, baseY, hgt, leaf, leafDark, trunk) {
+    ctx.strokeStyle = trunk; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x, baseY); ctx.quadraticCurveTo(x + 10, baseY - hgt / 2, x + 4, baseY - hgt); ctx.stroke();
+    const tx = x + 4, ty = baseY - hgt;
+    for (let k = 0; k < 7; k++) {
+      const a = -Math.PI / 2 + (k - 3) * 0.5;
+      ctx.save(); ctx.translate(tx, ty); ctx.rotate(a);
+      ctx.fillStyle = k % 2 ? leafDark : leaf;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(14, -7 * Math.sign(k - 3 || 1), 30, 4 * Math.sign(k - 3 || 1));
+      ctx.quadraticCurveTo(14, 3, 0, 0); ctx.fill();
+      ctx.restore();
+    }
+  }
+  function drawCypress(x, baseY, hgt, c) {
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.ellipse(x, baseY - hgt / 2, 7, hgt / 2, 0, 0, TAU); ctx.fill();
+  }
+  // A brass lantern; at night it glows.
+  function drawLantern(x, y, s, lit) {
+    if (lit) {
+      const g = ctx.createRadialGradient(x, y + 6 * s, 2, x, y + 6 * s, 34 * s);
+      g.addColorStop(0, 'rgba(255, 200, 100, 0.55)'); g.addColorStop(1, 'rgba(255, 200, 100, 0)');
+      ctx.fillStyle = g; circle(x, y + 6 * s, 34 * s); ctx.fill();
+    }
+    ctx.fillStyle = '#6a4220';
+    ctx.fillRect(x - 0.8 * s, y - 8 * s, 1.6 * s, 6 * s);
+    ctx.beginPath(); ctx.moveTo(x - 6 * s, y); ctx.lineTo(x, y - 4 * s); ctx.lineTo(x + 6 * s, y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = lit ? '#ffd47a' : '#f3c86a';
+    ctx.beginPath(); ctx.moveTo(x - 5 * s, y); ctx.lineTo(x + 5 * s, y); ctx.lineTo(x + 6.5 * s, y + 7 * s); ctx.lineTo(x + 4 * s, y + 13 * s); ctx.lineTo(x - 4 * s, y + 13 * s); ctx.lineTo(x - 6.5 * s, y + 7 * s); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#6a4220'; ctx.lineWidth = 1.2 * s;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 13 * s); ctx.moveTo(x - 6.5 * s, y + 7 * s); ctx.lineTo(x + 6.5 * s, y + 7 * s); ctx.stroke();
+    ctx.fillStyle = '#6a4220'; ctx.fillRect(x - 4 * s, y + 13 * s, 8 * s, 2.2 * s);
+  }
+  function drawPot(x, baseY, s, pot, leaf, flower) {
+    ctx.fillStyle = leaf;
+    for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse(x + (k - 2) * 3.5 * s, baseY - 13 * s - Math.abs(k - 2) * -1.5 * s, 3 * s, 7 * s, (k - 2) * 0.4, 0, TAU); ctx.fill(); }
+    if (flower) { ctx.fillStyle = flower; for (let k = 0; k < 3; k++) { circle(x + (k - 1) * 5 * s, baseY - 19 * s + (k % 2) * 3 * s, 2.4 * s); ctx.fill(); } }
+    ctx.fillStyle = pot;
+    ctx.beginPath(); ctx.moveTo(x - 7 * s, baseY - 10 * s); ctx.lineTo(x + 7 * s, baseY - 10 * s); ctx.lineTo(x + 5 * s, baseY); ctx.lineTo(x - 5 * s, baseY); ctx.closePath(); ctx.fill();
+    ctx.fillRect(x - 8 * s, baseY - 12 * s, 16 * s, 3 * s);
+  }
+  // A cat sitting on a wall, seen from the side; its tail swings now and then.
+  function drawCat(x, baseY, c, belly) {
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.ellipse(x, baseY - 8, 8, 8, 0, 0, TAU); ctx.fill();           // body
+    circle(x + 6, baseY - 18, 6); ctx.fill();                                              // head
+    ctx.beginPath(); ctx.moveTo(x + 2, baseY - 22); ctx.lineTo(x + 3, baseY - 29); ctx.lineTo(x + 7, baseY - 23); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + 7, baseY - 23); ctx.lineTo(x + 11, baseY - 28); ctx.lineTo(x + 11, baseY - 20); ctx.fill();
+    ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    const sw = Math.sin(game.time * 2 + x) * 4;
+    ctx.beginPath(); ctx.moveTo(x - 7, baseY - 3); ctx.quadraticCurveTo(x - 16, baseY - 6, x - 14 + sw * 0.3, baseY - 16 - sw); ctx.stroke();
+    ctx.fillStyle = belly; ctx.beginPath(); ctx.ellipse(x + 4, baseY - 6, 3.5, 5, 0, 0, TAU); ctx.fill();
+  }
+  function drawPigeon(x, baseY, c) {
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.ellipse(x, baseY - 5, 6.5, 4.5, -0.15, 0, TAU); ctx.fill();
+    circle(x + 5, baseY - 9, 3); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x - 5, baseY - 6); ctx.lineTo(x - 11, baseY - 4); ctx.lineTo(x - 5, baseY - 3); ctx.fill();
+    ctx.fillStyle = '#e8a33a'; ctx.fillRect(x + 7.5, baseY - 9.5, 2.5, 1.4);
+  }
+  // A hanging carpet: red field, border, a diamond medallion and a fringe.
+  function drawCarpet(x, y, w, h, c1, c2, c3) {
+    ctx.fillStyle = c1; ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = c2; ctx.lineWidth = 2.5; ctx.strokeRect(x + 3, y + 3, w - 6, h - 6);
+    ctx.fillStyle = c3;
+    ctx.beginPath(); ctx.moveTo(x + w / 2, y + 8); ctx.lineTo(x + w - 8, y + h / 2); ctx.lineTo(x + w / 2, y + h - 8); ctx.lineTo(x + 8, y + h / 2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = c2;
+    ctx.beginPath(); ctx.moveTo(x + w / 2, y + h / 2 - 7); ctx.lineTo(x + w / 2 + 6, y + h / 2); ctx.lineTo(x + w / 2, y + h / 2 + 7); ctx.lineTo(x + w / 2 - 6, y + h / 2); ctx.closePath(); ctx.fill();
+    for (const yy of [y + 9, y + h - 9]) { for (let k = 0; k < 3; k++) { ctx.fillRect(x + 7 + k * (w - 16) / 2, yy - 1.5, 3, 3); } }
+    ctx.strokeStyle = c3; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let k = 0; k <= w; k += 3) { ctx.moveTo(x + k, y + h); ctx.lineTo(x + k, y + h + 4); }
+    ctx.stroke();
+  }
+  function drawGull(x, y, s, c) {
+    ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    const f = Math.sin(game.time * 6 + x) * 2;
+    ctx.beginPath(); ctx.moveTo(x - 7 * s, y - f); ctx.quadraticCurveTo(x - 3 * s, y - 4 * s, x, y); ctx.quadraticCurveTo(x + 3 * s, y - 4 * s, x + 7 * s, y - f); ctx.stroke();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sky
+  // ---------------------------------------------------------------------------
+  // The sky gradient and the sun (or moon) never move, so each place's sky is painted once
+  // per screen size and then copied every frame: much less work for older phones.
+  const skyCache = new Map();
+  function paintSkyBase(c, L, W) {
+    const g = c.createLinearGradient(0, 0, 0, GROUND_TOP);
+    g.addColorStop(0, L.sky[0]); g.addColorStop(0.55, L.sky[1]); g.addColorStop(1, L.sky[2]);
+    c.fillStyle = g;
+    c.fillRect(0, 0, W, GROUND_TOP);
+    const [sxk, sy, sr, sc, glow] = L.sun, sx = W * sxk;
+    c.fillStyle = glow; c.beginPath(); c.arc(sx, sy, sr * 1.7, 0, TAU); c.fill();
+    c.fillStyle = sc; c.beginPath(); c.arc(sx, sy, sr, 0, TAU); c.fill();
+    if (L.stars) { // moon craters
+      c.fillStyle = 'rgba(190, 185, 160, 0.5)';
+      for (const [dx, dy, r] of [[-0.3, -0.2, 0.22], [0.28, 0.25, 0.15], [0.1, -0.45, 0.1]]) { c.beginPath(); c.arc(sx + sr * dx, sy + sr * dy, sr * r, 0, TAU); c.fill(); }
+    }
+  }
+  function drawSky(L, W) {
+    const m = ctx.getTransform(), pw = ctx.canvas.width, ph = Math.ceil(GROUND_TOP * m.d);
+    const key = LOOKS.indexOf(L) + ':' + pw + 'x' + ph;
+    let img = skyCache.get(key);
+    if (!img) {
+      if (skyCache.size > 24) skyCache.clear();     // screen sizes change rarely; never let it grow
+      img = document.createElement('canvas');
+      img.width = pw; img.height = ph;
+      const c = img.getContext('2d');
+      c.setTransform(m.a, 0, 0, m.d, 0, 0);
+      paintSkyBase(c, L, W);
+      skyCache.set(key, img);
+    }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(img, 0, 0); ctx.restore();
+    if (L.stars) {
+      ctx.fillStyle = '#fffbe8';
+      for (let i = 0; i < 60; i++) {
+        const x = hash(i, 30) * W, y = hash(i, 31) * 400;
+        ctx.globalAlpha = 0.55 + 0.45 * Math.sin(game.time * (1.5 + hash(i, 32) * 2) + i);
+        const r = 0.7 + hash(i, 33) * 1.5;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+      ctx.globalAlpha = 1;
+    }
+    // Puffy clouds with a shaded underside, drifting slowly
+    eachSlot(W, 0.04, 250, (i, x) => {
+      if (hash(i, 1) < 0.35) return;
+      const cx = x + hash(i, 2) * 110, cy = 54 + hash(i, 3) * 130, s = 0.7 + hash(i, 4) * 0.7;
+      ctx.fillStyle = L.cloudShade;
+      ctx.beginPath(); ctx.ellipse(cx, cy + 4 * s, 48 * s, 13 * s, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = L.cloud;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 46 * s, 12 * s, 0, 0, TAU);
+      ctx.ellipse(cx - 20 * s, cy - 8 * s, 20 * s, 15 * s, 0, 0, TAU);
+      ctx.ellipse(cx + 4 * s, cy - 17 * s, 23 * s, 20 * s, 0, 0, TAU);
+      ctx.ellipse(cx + 26 * s, cy - 6 * s, 17 * s, 12 * s, 0, 0, TAU);
+      ctx.fill();
+    });
+    if (L.gulls) {
+      eachSlot(W, 0.12, 420, (i, x) => {
+        if (hash(i, 40) < 0.4) return;
+        const n = L.gulls === 2 ? 3 : 2;
+        for (let k = 0; k < n; k++) drawGull(x + hash(i, 41 + k) * 160, 150 + hash(i, 44 + k) * 140, 0.8 + hash(i, 47 + k) * 0.5, 'rgba(255,255,255,0.9)');
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Far layers: mountains, hills, dunes or the sea
+  // ---------------------------------------------------------------------------
+  function ridge(W, factor, slotW, base, low, high, salt, smooth) {
+    // a line of peaks across the screen, returned as points
+    const off = game.distance * factor, first = Math.floor(off / slotW) - 1, pts = [];
+    for (let i = first; i * slotW - off < W + slotW * 2; i++) pts.push({ x: i * slotW - off + hash(i, salt) * slotW * 0.35, y: low + hash(i, salt + 1) * (high - low), i });
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x - slotW, base);
+    ctx.lineTo(pts[0].x - slotW, pts[0].y);
+    for (let k = 0; k < pts.length; k++) {
+      const p = pts[k], n = pts[k + 1];
+      if (smooth) { if (n) ctx.quadraticCurveTo(p.x, p.y, (p.x + n.x) / 2, (p.y + n.y) / 2); else ctx.lineTo(p.x, p.y); }
+      else { ctx.lineTo(p.x, p.y); if (n) ctx.lineTo((p.x + n.x) / 2, Math.max(p.y, n.y) + 36 + hash(p.i, salt + 2) * 30); }
+    }
+    ctx.lineTo(pts[pts.length - 1].x + slotW, base);
+    ctx.closePath();
+    return pts;
+  }
+  function drawFar(L, W) {
+    const c = L.farC;
+    if (L.far === 'atlas') {
+      ctx.fillStyle = c[0];
+      const peaks = ridge(W, 0.06, 160, GROUND_TOP, 290, 400, 5, false); ctx.fill();
+      ctx.fillStyle = c[2];
+      for (const p of peaks) {
+        if (p.y > 340) continue;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 22, p.y + 26); ctx.lineTo(p.x - 8, p.y + 20); ctx.lineTo(p.x, p.y + 28);
+        ctx.lineTo(p.x + 10, p.y + 19); ctx.lineTo(p.x + 22, p.y + 26); ctx.closePath(); ctx.fill();
+      }
+      ctx.fillStyle = c[1]; ridge(W, 0.09, 120, GROUND_TOP, 380, 430, 9, true); ctx.fill();
+      ctx.fillStyle = c[3]; ctx.fillRect(0, 455, W, GROUND_TOP - 455);
+    } else if (L.far === 'hills') {
+      ctx.fillStyle = c[0]; ridge(W, 0.06, 180, GROUND_TOP, 330, 390, 12, true); ctx.fill();
+      ctx.fillStyle = c[1]; ridge(W, 0.1, 140, GROUND_TOP, 380, 420, 15, true); ctx.fill();
+      ctx.fillStyle = c[3]; ctx.fillRect(0, 470, W, GROUND_TOP - 470);
+    } else if (L.far === 'rif') {
+      ctx.fillStyle = c[2]; ridge(W, 0.05, 170, GROUND_TOP, 270, 330, 18, true); ctx.fill();
+      ctx.fillStyle = c[0]; ridge(W, 0.08, 150, GROUND_TOP, 320, 380, 21, true); ctx.fill();
+      ctx.fillStyle = c[1]; ridge(W, 0.12, 120, GROUND_TOP, 390, 430, 24, true); ctx.fill();
+    } else if (L.far === 'dunes') {
+      ctx.fillStyle = c[3]; ridge(W, 0.05, 200, GROUND_TOP, 380, 430, 27, true); ctx.fill();
+      ctx.fillStyle = c[0]; ridge(W, 0.09, 170, GROUND_TOP, 420, 460, 30, true); ctx.fill();
+      ctx.fillStyle = c[1]; ridge(W, 0.14, 150, GROUND_TOP, 455, 490, 33, true); ctx.fill();
+    } else if (L.far === 'sea') {
+      // distant headland, then the ocean with moving glints
+      ctx.fillStyle = c[3]; ridge(W, 0.03, 260, 430, 395, 420, 36, true); ctx.fill();
+      const g = ctx.createLinearGradient(0, 420, 0, GROUND_TOP);
+      g.addColorStop(0, c[1]); g.addColorStop(1, c[0]);
+      ctx.fillStyle = g; ctx.fillRect(0, 420, W, GROUND_TOP - 420);
+      ctx.fillStyle = c[2];
+      eachSlot(W, 0.2, 46, (i, x) => {
+        const y = 432 + hash(i, 37) * 110;
+        ctx.globalAlpha = 0.45 + 0.4 * Math.sin(game.time * 2 + i);
+        ctx.fillRect(x + hash(i, 38) * 30, y, 10 + hash(i, 39) * 14, 2);
+      });
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Towns (middle distance), each with its landmark
+  // ---------------------------------------------------------------------------
+  function koutoubia(x, topY, w, c, shade, tile, lit) {
+    // tall square minaret with arched panels, a turquoise tile band, small lantern and three golden balls
+    ctx.fillStyle = c; ctx.fillRect(x, topY, w, GROUND_TOP - topY);
+    ctx.fillStyle = shade; ctx.fillRect(x + w * 0.74, topY, w * 0.26, GROUND_TOP - topY);
+    ctx.fillStyle = tile; ctx.fillRect(x, topY + 6, w, 7);
+    for (let k = 0; k < 4; k++) ctx.fillRect(x + k * (w / 3.4), topY - 6, w / 7, 6);
+    ctx.fillStyle = c; ctx.fillRect(x + w * 0.28, topY - 26, w * 0.44, 20);
+    ctx.fillStyle = tile; ctx.fillRect(x + w * 0.28, topY - 20, w * 0.44, 4);
+    ctx.fillStyle = shade; ctx.beginPath(); ctx.moveTo(x + w * 0.24, topY - 26); ctx.lineTo(x + w * 0.5, topY - 36); ctx.lineTo(x + w * 0.76, topY - 26); ctx.fill();
+    ctx.fillStyle = '#e8b43a'; ctx.fillRect(x + w * 0.5 - 1, topY - 54, 2, 18);
+    for (const [dy, r] of [[-40, 3.4], [-46, 2.8], [-51, 2.1]]) { circle(x + w * 0.5, topY + dy, r); ctx.fill(); }
+    ctx.fillStyle = lit ? '#ffcd6a' : shade;
+    for (let k = 0; k < 3; k++) { archPath(x + w * 0.37, topY + 26 + k * 46, w * 0.24, topY + 52 + k * 46); ctx.fill(); }
+    ctx.strokeStyle = shade; ctx.lineWidth = 2;
+    ctx.strokeRect(x + w * 0.12, topY + 20, w * 0.5, 140);
+  }
+  function drawTown(L, W) {
+    const c = L.townC;
+    if (L.town === 'medina' || L.town === 'nightMedina') {
+      const lit = L.town === 'nightMedina';
+      // landmark first, so houses stand in front of its base
+      eachSlot(W, 0.16, 760, (i, x) => {
+        if (hash(i, 50) < 0.15) return;
+        koutoubia(x + 260 + hash(i, 51) * 160, 250 + hash(i, 52) * 30, 46, c[3], c[4], c[5], lit);
+      });
+      eachSlot(W, 0.25, 56, (i, x) => {
+        const h = 46 + hash(i, 8) * 64, top = GROUND_TOP - 28 - h;
+        rect(x, top, 58, GROUND_TOP - top, c[0]);
+        rect(x + 44, top, 14, GROUND_TOP - top, c[1]);
+        rect(x - 1, top - 4, 60, 4, c[1]);
+        ctx.fillStyle = c[2];
+        if (hash(i, 9) > 0.3) ctx.fillRect(x + 11, top + 15, 7, 10);
+        if (hash(i, 10) > 0.5) ctx.fillRect(x + 27, top + 15, 7, 10);
+        if (hash(i, 61) > 0.75) ctx.fillRect(x + 18, top + 38, 7, 10);
+        if (!lit && hash(i, 11) < 0.18) drawCypress(x + 30, top, 46 + hash(i, 12) * 20, '#3c6b3a');
+        if (!lit && hash(i, 13) > 0.86) drawPalm(x + 20, top + 4, 50, '#4a8a46', '#3a743a', '#7a4a2c');
+      });
+    } else if (L.town === 'fes') {
+      // the medina climbs a hill: two rows of houses, many with green-tiled roofs
+      for (const [f, base, sz, salt] of [[0.18, 470, 40, 70], [0.26, 512, 52, 80]]) {
+        eachSlot(W, f, sz, (i, x) => {
+          const h = 30 + hash(i, salt) * 50, top = base - h;
+          rect(x, top, sz + 1, GROUND_TOP - top, hash(i, salt + 1) > 0.5 ? c[0] : c[5]);
+          rect(x + sz * 0.75, top, sz * 0.25 + 1, GROUND_TOP - top, c[1]);
+          ctx.fillStyle = c[2];
+          if (hash(i, salt + 2) > 0.35) ctx.fillRect(x + sz * 0.25, top + 12, 5, 8);
+          if (hash(i, salt + 3) > 0.62) { // green tiled roof
+            ctx.fillStyle = c[3];
+            ctx.beginPath(); ctx.moveTo(x - 3, top); ctx.lineTo(x + sz / 2, top - 14); ctx.lineTo(x + sz + 3, top); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = c[4]; ctx.fillRect(x - 3, top - 2, sz + 6, 3);
+          }
+        });
+      }
+      eachSlot(W, 0.2, 640, (i, x) => { // Bou Inania style minaret with a green top
+        const mx = x + 200 + hash(i, 90) * 200, top = 300 + hash(i, 91) * 30, w = 34;
+        rect(mx, top, w, GROUND_TOP - top, c[0]); rect(mx + w * 0.72, top, w * 0.28, GROUND_TOP - top, c[1]);
+        rect(mx, top + 10, w, 16, c[3]);
+        ctx.fillStyle = c[3]; ctx.beginPath(); ctx.moveTo(mx + 6, top); ctx.lineTo(mx + w / 2, top - 14); ctx.lineTo(mx + w - 6, top); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#e8b43a'; for (const [dy, r] of [[-18, 2.6], [-23, 2]]) { circle(mx + w / 2, top + dy, r); ctx.fill(); }
+      });
+    } else if (L.town === 'chaouen') {
+      // blue and white houses stacked up the mountainside, a mosque tower here and there
+      for (const [f, base, sz, salt] of [[0.14, 440, 34, 100], [0.2, 480, 42, 110], [0.27, 520, 52, 120]]) {
+        eachSlot(W, f, sz, (i, x) => {
+          const h = 26 + hash(i, salt) * 40, top = base - h, col = [c[0], c[1], c[4], c[0], c[2]][Math.floor(hash(i, salt + 1) * 5)];
+          rect(x, top, sz + 1, GROUND_TOP - top, col);
+          rect(x + sz * 0.78, top, sz * 0.22 + 1, GROUND_TOP - top, 'rgba(40, 70, 130, 0.18)');
+          ctx.fillStyle = c[3];
+          if (hash(i, salt + 2) > 0.4) ctx.fillRect(x + sz * 0.3, top + 10, 5, 8);
+          if (hash(i, salt + 3) > 0.85) { ctx.fillStyle = c[5]; ctx.beginPath(); ctx.moveTo(x - 2, top); ctx.lineTo(x + sz / 2, top - 9); ctx.lineTo(x + sz + 2, top); ctx.fill(); }
+        });
+      }
+      eachSlot(W, 0.16, 700, (i, x) => {
+        const mx = x + 300 + hash(i, 130) * 200, top = 330, w = 26;
+        rect(mx, top, w, 140, c[0]); rect(mx + w * 0.7, top, w * 0.3, 140, c[4]);
+        ctx.fillStyle = c[2]; archPath(mx + w * 0.4, top + 14, 8, top + 30); ctx.fill();
+        ctx.fillStyle = c[0]; ctx.fillRect(mx + 6, top - 12, 14, 12);
+        ctx.fillStyle = '#e8b43a'; circle(mx + 13, top - 17, 2.4); ctx.fill();
+      });
+    } else if (L.town === 'kasbah') {
+      // ksar: tapered mud towers with crenellations and carved triangles, an oasis around them
+      eachSlot(W, 0.22, 230, (i, x) => {
+        if (hash(i, 140) < 0.2) return;
+        const bx = x + hash(i, 141) * 60, top = 336 + hash(i, 142) * 50, w = 120;
+        rect(bx + 22, top + 30, w - 44, GROUND_TOP - top - 30, c[0]);
+        for (const tx of [bx, bx + w - 30]) {
+          const tt = top - 10 + hash(i, tx) * 10;
+          ctx.fillStyle = c[0];
+          ctx.beginPath(); ctx.moveTo(tx, GROUND_TOP); ctx.lineTo(tx + 3, tt); ctx.lineTo(tx + 27, tt); ctx.lineTo(tx + 30, GROUND_TOP); ctx.fill();
+          ctx.fillStyle = c[1]; ctx.fillRect(tx + 20, tt, 7, GROUND_TOP - tt);
+          for (let k = 0; k < 3; k++) ctx.fillRect(tx + 3 + k * 9, tt - 6, 6, 6);
+          ctx.fillStyle = c[2];
+          for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(tx + 7 + k * 6, tt + 18); ctx.lineTo(tx + 10 + k * 6, tt + 12); ctx.lineTo(tx + 13 + k * 6, tt + 18); ctx.fill(); }
+          ctx.fillRect(tx + 12, tt + 30, 5, 7);
+        }
+        ctx.fillStyle = c[2]; ctx.fillRect(bx + 52, top + 50, 6, 8); ctx.fillRect(bx + 66, top + 50, 6, 8);
+        ctx.fillStyle = c[1];
+        for (let k = 0; k < 5; k++) ctx.fillRect(bx + 24 + k * 15, top + 24, 7, 6);
+      });
+    } else if (L.town === 'coastTown') {
+      // white town behind the ramparts, with blue doors, a lighthouse every so often
+      eachSlot(W, 0.24, 48, (i, x) => {
+        const h = 26 + hash(i, 150) * 42, top = 500 - h;
+        rect(x, top, 49, GROUND_TOP - top, c[0]);
+        rect(x + 36, top, 13, GROUND_TOP - top, c[1]);
+        ctx.fillStyle = c[2];
+        if (hash(i, 151) > 0.35) ctx.fillRect(x + 10, top + 10, 6, 9);
+        if (hash(i, 152) > 0.7) ctx.fillRect(x + 24, top + 10, 6, 9);
+      });
+      eachSlot(W, 0.24, 820, (i, x) => {
+        const lx = x + 360 + hash(i, 153) * 200, top = 330;
+        ctx.fillStyle = c[0];
+        ctx.beginPath(); ctx.moveTo(lx, 500); ctx.lineTo(lx + 4, top); ctx.lineTo(lx + 22, top); ctx.lineTo(lx + 26, 500); ctx.fill();
+        rect(lx + 16, top, 7, 170, c[1]);
+        rect(lx + 1, top + 40, 24, 8, c[3]); rect(lx + 2, top + 92, 23, 8, c[3]);
+        rect(lx - 2, top - 4, 30, 5, c[2]);
+        rect(lx + 5, top - 18, 16, 14, '#fff2b0');
+        ctx.fillStyle = c[2]; ctx.beginPath(); ctx.moveTo(lx + 2, top - 18); ctx.lineTo(lx + 13, top - 28); ctx.lineTo(lx + 24, top - 18); ctx.fill();
+      });
+      // rampart
+      rect(0, 500, W, GROUND_TOP - 500, c[5]);
+      ctx.fillStyle = c[4];
+      eachSlot(W, 0.24, 24, (i, x) => ctx.fillRect(x, 493, 13, 8));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Near layers: walls along the street with palms, pots, lanterns, cats and pigeons
+  // ---------------------------------------------------------------------------
+  function drawNear(L, W) {
+    const c = L.nearC, lit = !!L.night;
+    eachSlot(W, 0.5, 100, (i, x) => {
+      const h = 34 + hash(i, 13) * 44, top = GROUND_TOP - h;
+      if (L.near === 'oasis') {
+        if (hash(i, 160) > 0.35) drawPalm(x + 30, GROUND_TOP, 70 + hash(i, 161) * 50, c[3], c[4], c[5]);
+        if (hash(i, 162) > 0.55) drawPalm(x + 74, GROUND_TOP, 50 + hash(i, 163) * 40, c[4], c[3], c[5]);
+        if (hash(i, 164) > 0.5) { // a low mud wall
+          rect(x, GROUND_TOP - 26, 100, 26, c[0]); rect(x + 82, GROUND_TOP - 26, 18, 26, c[1]);
+          for (let k = 0; k < 6; k++) rect(x + 3 + k * 16, GROUND_TOP - 31, 8, 5, c[0]);
+        }
+        return;
+      }
+      rect(x, top, 100, h, c[0]);
+      rect(x + 82, top, 18, h, c[1]);
+      if (L.near === 'riad') {
+        for (let k = 0; k < 6; k++) rect(x + 4 + k * 16, top - 6, 8, 6, c[0]);
+      } else if (L.near === 'fesNear') {
+        ctx.fillStyle = c[5]; ctx.fillRect(x - 3, top - 5, 106, 7);
+        ctx.fillStyle = c[6]; for (let k = 0; k < 13; k++) ctx.fillRect(x - 2 + k * 8, top - 5, 3, 7);
+      } else if (L.near === 'chaouenNear') {
+        rect(x, top - 4, 100, 5, c[2]);
+        rect(x, GROUND_TOP - 8, 100, 8, c[1]);
+      } else if (L.near === 'harbour') {
+        rect(x, top - 4, 100, 5, c[2]);
+        for (let k = 0; k < 5; k++) rect(x + 4 + k * 20, top - 12, 11, 8, c[0]);
+      }
+      if (hash(i, 14) > 0.45) { // door
+        ctx.fillStyle = c[2]; archPath(x + 34, GROUND_TOP - 40, 20, GROUND_TOP); ctx.fill();
+        if (L.near === 'riad' || L.near === 'fesNear') { ctx.fillStyle = '#e8b43a'; circle(x + 39, GROUND_TOP - 18, 1.6); ctx.fill(); }
+      }
+      if (L.near === 'chaouenNear' && hash(i, 170) > 0.3) {
+        for (let k = 0; k < 3; k++) if (hash(i, 171 + k) > 0.4) drawPot(x + 14 + k * 26, top + 22 + hash(i, 175 + k) * 14, 0.7, c[5], c[3], c[4]);
+      }
+      if ((L.near === 'riad' || L.near === 'fesNear') && hash(i, 180) > 0.55) drawLantern(x + 62, top + 10, 0.9, lit);
+      if (L.near === 'harbour' && hash(i, 181) > 0.6) { // a blue fishing boat leaning on the wall
+        ctx.fillStyle = c[2]; ctx.beginPath(); ctx.moveTo(x + 50, GROUND_TOP - 16); ctx.lineTo(x + 96, GROUND_TOP - 16); ctx.lineTo(x + 88, GROUND_TOP); ctx.lineTo(x + 58, GROUND_TOP); ctx.closePath(); ctx.fill();
+        rect(x + 52, GROUND_TOP - 16, 42, 3, c[6]);
+      }
+      if (hash(i, 15) > 0.62 && L.near !== 'chaouenNear') drawPalm(x + 72, GROUND_TOP, 80 + hash(i, 16) * 40, c[3], c[4], c[5]);
+      if (L.near !== 'harbour' && hash(i, 182) > 0.78) drawPot(x + 88, GROUND_TOP, 1, c[6], c[3], L.near === 'chaouenNear' ? c[4] : null);
+      // wall-top visitors
+      const visitor = hash(i, 183);
+      if (visitor > 0.9) drawCat(x + 20, top - (L.near === 'riad' ? 6 : 4), lit ? '#2a2236' : '#e3923f', lit ? '#3a3046' : '#f6e1c4');
+      else if (visitor < 0.12) { drawPigeon(x + 30, top - 4, lit ? '#3a3f5a' : '#8a93a6'); drawPigeon(x + 48, top - 4, lit ? '#3a3f5a' : '#9aa3b6'); }
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ground
+  // ---------------------------------------------------------------------------
+  function drawGround(L, W) {
+    const top = GROUND_TOP, c = L.groundC;
+    ctx.fillStyle = c[0];
+    ctx.fillRect(0, top, W, T.groundHeight);
+    const step = 24, off = -(game.distance % step);
+    if (L.ground === 'zellige' || L.ground === 'steps') {
+      const band = 18;
+      ctx.fillStyle = c[2]; ctx.fillRect(0, top, W, band);
+      for (let x = off - step; x < W + step; x += step) {
+        ctx.fillStyle = c[3];
+        ctx.beginPath(); ctx.moveTo(x + step / 2, top + 2); ctx.lineTo(x + step - 3, top + band / 2); ctx.lineTo(x + step / 2, top + band - 2); ctx.lineTo(x + 3, top + band / 2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = c[4]; circle(x, top + band / 2, 2.8); ctx.fill();
+        ctx.fillStyle = c[5]; circle(x, top + band / 2, 1.2); ctx.fill();
+      }
+      ctx.fillStyle = INK; ctx.fillRect(0, top, W, 3); ctx.fillRect(0, top + band, W, 2);
+      // floor tiles in perspective-free rows
+      ctx.fillStyle = c[1];
+      const s2 = 36, off2 = -(game.distance % s2);
+      for (let x = off2 - s2; x < W + s2; x += s2) {
+        ctx.fillRect(x, top + band + 2, 2, T.groundHeight);
+        ctx.beginPath(); ctx.moveTo(x + 18, top + band + 14); ctx.lineTo(x + 26, top + band + 22); ctx.lineTo(x + 18, top + band + 30); ctx.lineTo(x + 10, top + band + 22); ctx.closePath(); ctx.fill();
+      }
+      ctx.fillRect(0, top + band + 40, W, 2);
+    } else if (L.ground === 'sand') {
+      ctx.fillStyle = INK; ctx.fillRect(0, top, W, 3);
+      ctx.fillStyle = c[2]; ctx.fillRect(0, top + 3, W, 8);
+      ctx.strokeStyle = c[1]; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+      const s2 = 44, off2 = -(game.distance % s2);
+      for (let x = off2 - s2; x < W + s2; x += s2) {
+        for (const [dy, dx] of [[24, 0], [42, 20], [62, 6]]) {
+          ctx.beginPath(); ctx.moveTo(x + dx, top + dy); ctx.quadraticCurveTo(x + dx + 10, top + dy - 5, x + dx + 22, top + dy); ctx.stroke();
+        }
+      }
+    } else if (L.ground === 'stone') {
+      ctx.fillStyle = c[2]; ctx.fillRect(0, top, W, 16);
+      ctx.fillStyle = c[3];
+      for (let x = off - step; x < W + step; x += step) ctx.fillRect(x + 4, top + 5, 14, 6);
+      ctx.fillStyle = INK; ctx.fillRect(0, top, W, 3); ctx.fillRect(0, top + 16, W, 2);
+      ctx.fillStyle = c[1];
+      const s2 = 40, off2 = -(game.distance % s2);
+      for (let x = off2 - s2; x < W + s2; x += s2) { ctx.fillRect(x, top + 18, 2, 30); ctx.fillRect(x + 20, top + 48, 2, 36); }
+      ctx.fillRect(0, top + 47, W, 2);
+    }
+  }
+
+  function drawScene(wi, W) {
+    const L = LOOKS[wi];
+    drawSky(L, W);
+    drawFar(L, W);
+    drawTown(L, W);
+    drawNear(L, W);
+    drawGround(L, W);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Obstacles: tall walls in the style of the place they were built in.
+  // Every decoration stays inside the collision box (plus the small ledge that has been
+  // there since Phase 1), so what you see is what you hit.
+  // ---------------------------------------------------------------------------
+  function band(S, x, y, w, h) {
+    if (S.band === 'zellige') {
+      rect(x, y, w, h, '#f3e6cc');
+      const n = 4, cw = w / n;
+      for (let k = 0; k < n; k++) {
+        ctx.fillStyle = k % 2 ? '#2f5fc4' : '#1f8a5a';
+        const cx = x + cw * k + cw / 2, cy = y + h / 2;
+        ctx.beginPath(); ctx.moveTo(cx, y + 2); ctx.lineTo(cx + cw / 2 - 2, cy); ctx.lineTo(cx, y + h - 2); ctx.lineTo(cx - cw / 2 + 2, cy); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#c4222a'; circle(cx, cy, 1.6); ctx.fill();
+      }
+    } else if (S.band === 'triangles') {
+      rect(x, y, w, h, S.shade);
+      ctx.fillStyle = S.light;
+      for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.moveTo(x + 2 + k * 12, y + h - 2); ctx.lineTo(x + 8 + k * 12, y + 2); ctx.lineTo(x + 14 + k * 12, y + h - 2); ctx.fill(); }
+    } else if (S.band === 'blue') {
+      rect(x, y, w, h, '#2f6fb7'); rect(x, y + 5, w, 6, '#f2eee6');
+    } else {
+      rect(x, y, w, h, '#f3f6fb'); rect(x, y + 6, w, 4, '#a6c8f4');
+    }
+    ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.moveTo(x, y + h); ctx.lineTo(x + w, y + h); ctx.stroke();
+  }
+
+  // One "storey" of decoration, about 110 units tall, centred on (cx, cy) of the wall face.
+  function storey(S, o, k, x, cy, w) {
+    const pick = hash(o.id * 7 + k, 200);
+    const cx = x + (w - 14) / 2;
+    if (S.feature === 'carpet' && pick < 0.45) {
+      // wooden pole with a carpet hanging from it
+      rect(x + 4, cy - 42, w - 22, 4, '#6a4220');
+      const cols = pick < 0.22 ? ['#b8262c', '#f3e6cc', '#2b3f8f'] : ['#2b3f8f', '#f5b52a', '#b8262c'];
+      drawCarpet(x + 9, cy - 38, w - 32, 62, cols[0], cols[1], cols[2]);
+      return;
+    }
+    if ((S.feature === 'carpet' || S.feature === 'cedar') && pick < 0.7) {
+      // a lantern in an arched niche
+      ctx.fillStyle = S.lit ? '#5a2e1c' : S.shade; archPath(cx, cy - 34, 30, cy + 22); ctx.fill();
+      drawLantern(cx, cy - 18, 1.25, S.lit);
+      return;
+    }
+    if (S.feature === 'cedar' && pick < 0.85) {
+      // carved cedar window with a tiny tiled hood
+      rect(cx - 15, cy - 30, 30, 40, '#7a4a2c');
+      ctx.strokeStyle = '#a8703f'; ctx.lineWidth = 2;
+      for (let a = 0; a < 3; a++) for (let b = 0; b < 4; b++) ctx.strokeRect(cx - 12 + a * 8, cy - 27 + b * 9, 8, 9);
+      rect(cx - 18, cy - 36, 36, 6, '#1f8a5a');
+      return;
+    }
+    if (S.feature === 'flowers') {
+      // window with blue shutters and a pot of red geraniums
+      rect(cx - 12, cy - 26, 24, 32, '#f3f6fb');
+      rect(cx - 9, cy - 23, 18, 26, '#2a4f9a');
+      rect(cx - 19, cy - 26, 7, 32, '#2f5fc4'); rect(cx + 12, cy - 26, 7, 32, '#2f5fc4');
+      rect(cx - 16, cy + 6, 32, 4, '#f3f6fb');
+      drawPot(cx - 7, cy + 6, 0.75, '#c0612f', '#3b7d3e', '#e0452b');
+      drawPot(cx + 8, cy + 6, 0.65, '#c0612f', '#3b7d3e', '#f28bb0');
+      return;
+    }
+    if (S.feature === 'kasbah') {
+      // carved triangles, a small window and the ends of wooden beams
+      ctx.fillStyle = S.shade;
+      for (let r = 0; r < 2; r++) for (let q = 0; q < 4; q++) {
+        ctx.beginPath(); ctx.moveTo(x + 8 + q * 12, cy - 20 + r * 12); ctx.lineTo(x + 14 + q * 12, cy - 30 + r * 12); ctx.lineTo(x + 20 + q * 12, cy - 20 + r * 12); ctx.fill();
+      }
+      rect(cx - 6, cy + 2, 12, 16, '#5a2e18');
+      ctx.fillStyle = '#7a4a2c';
+      for (let q = 0; q < 4; q++) { circle(x + 10 + q * 14, cy + 30, 2.6); ctx.fill(); }
+      return;
+    }
+    if (S.feature === 'shutters') {
+      if (pick < 0.3) { // fishing net and buoys
+        ctx.strokeStyle = '#8a7a5a'; ctx.lineWidth = 1.2;
+        for (let q = 0; q < 6; q++) { ctx.beginPath(); ctx.moveTo(x + 6 + q * 9, cy - 32); ctx.lineTo(x + 6 + q * 9 + 8, cy + 18); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x + 56 - q * 9, cy - 32); ctx.lineTo(x + 56 - q * 9 - 8, cy + 18); ctx.stroke(); }
+        for (const [bx, bc] of [[x + 14, '#e0452b'], [x + 34, '#f5b52a'], [x + 52, '#e0452b']]) { ctx.fillStyle = bc; circle(bx, cy + 20, 4.5); ctx.fill(); }
+      } else {
+        rect(cx - 10, cy - 24, 20, 30, '#2a4a7a');
+        rect(cx - 18, cy - 24, 8, 30, '#2f6fb7'); rect(cx + 10, cy - 24, 8, 30, '#2f6fb7');
+        ctx.strokeStyle = '#4f8fd6'; ctx.lineWidth = 1;
+        for (let q = 0; q < 5; q++) { ctx.beginPath(); ctx.moveTo(cx - 18, cy - 20 + q * 6); ctx.lineTo(cx - 10, cy - 20 + q * 6); ctx.moveTo(cx + 10, cy - 20 + q * 6); ctx.lineTo(cx + 18, cy - 20 + q * 6); ctx.stroke(); }
+      }
+      return;
+    }
+    // plain window (lit at night) with a laundry line under it now and then
+    ctx.fillStyle = S.lit ? '#ffcd6a' : '#5a2e1c'; archPath(cx, cy - 30, 22, cy + 6); ctx.fill();
+    if (pick > 0.86) {
+      ctx.strokeStyle = '#5a3a24'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(x + 4, cy + 16); ctx.quadraticCurveTo(cx, cy + 22, x + w - 18, cy + 16); ctx.stroke();
+      const cl = ['#f2f2ea', '#3a6fc4', '#ee8a2a', '#2f9a7a'];
+      for (let q = 0; q < 4; q++) rect(x + 7 + q * 12, cy + 17 + (q % 2), 9, 12 + (q % 2) * 4, cl[q]);
+    }
+  }
+
+  function drawObstacle(o) {
+    const S = WALLS[o.world] || WALLS[0];
+    const w = T.obstacleWidth;
+    const top = o.gapY - o.gap / 2, bottom = o.gapY + o.gap / 2;
+    const capH = 18;
+    const parts = [{ y: 0, h: top, isTop: true }, { y: bottom, h: GROUND_TOP - bottom, isTop: false }];
+    for (const p of parts) {
+      if (p.h <= 0) continue;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(o.x, p.y, w, p.h); ctx.clip();
+      rect(o.x, p.y, w, p.h, S.body);
+      rect(o.x + w - 14, p.y, 14, p.h, S.shade);
+      // plaster texture: faint horizontal courses
+      ctx.fillStyle = S.line;
+      const dir = p.isTop ? -1 : 1, edge = p.isTop ? top : bottom;
+      for (let k = 1; k < 30; k++) { const ly = edge + dir * (capH + 16 + k * 22); ctx.fillRect(o.x, ly, w - 14, 1.5); }
+      band(S, o.x, p.isTop ? edge - capH - 16 : edge + capH, w, 16);
+      // storeys repeat away from the gap, so the edge near the player always looks the same
+      for (let k = 0; k < 5; k++) {
+        const cy = edge + dir * (capH + 16 + 66 + k * 112);
+        if (p.isTop ? cy < -60 : cy > GROUND_TOP + 60) break;
+        if (!p.isTop && cy + 40 > GROUND_TOP - 4) {      // street level: a door instead
+          if (GROUND_TOP - (edge + capH + 16) > 70) {
+            ctx.fillStyle = S.feature === 'flowers' || S.feature === 'shutters' ? '#2f5fc4' : S.feature === 'kasbah' ? '#5a2e18' : '#2f5fa8';
+            archPath(o.x + 29, GROUND_TOP - 54, 30, GROUND_TOP); ctx.fill();
+            ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke();
+          }
+          break;
+        }
+        storey(S, o, k + (p.isTop ? 10 : 0), o.x, cy, w);
+      }
+      ctx.restore();
+
+      // Ledge at the opening
+      const capY = p.isTop ? top - capH : bottom;
+      const cx0 = o.x - 6, cw = w + 12;
+      if (S.cap === 'tiles') {
+        // green glazed tiles, like the roofs on the sheet
+        rect(cx0, capY, cw, capH, '#1f8a5a');
+        ctx.fillStyle = '#2fae74';
+        for (let k = 0; k < 7; k++) ctx.fillRect(cx0 + 3 + k * 12, capY + 2, 5, capH - 4);
+        rect(cx0, p.isTop ? capY + capH - 4 : capY, cw, 4, '#146a44');
+      } else if (S.cap === 'merlons') {
+        rect(cx0, capY, cw, capH, S.light);
+        ctx.fillStyle = S.shade;
+        for (let k = 0; k < 6; k++) ctx.fillRect(cx0 + 4 + k * 14, p.isTop ? capY + capH - 8 : capY + 3, 8, 5);
+      } else if (S.cap === 'blue') {
+        rect(cx0, capY, cw, capH, '#f6f3ec'); rect(cx0, capY + 6, cw, 6, '#2f6fb7');
+      } else {
+        rect(cx0, capY, cw, capH, '#f3f6fb'); rect(cx0, p.isTop ? capY + 2 : capY + capH - 6, cw, 4, '#a6c8f4');
+      }
+      ctx.strokeStyle = INK; ctx.lineWidth = 3;
+      ctx.strokeRect(o.x, p.y, w, p.h);
+      ctx.strokeRect(cx0, capY, cw, capH);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Coins and power-ups. Coins spin; power-ups float in a bubble so they stand out.
+  // ---------------------------------------------------------------------------
+  function starPath(cx, cy, r) {
+    // the Moroccan eight-pointed star: two overlapping squares
+    ctx.beginPath();
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4, b = a + Math.PI / 8;
+      ctx.lineTo(cx + Math.cos(a - Math.PI / 8) * r, cy + Math.sin(a - Math.PI / 8) * r);
+      ctx.lineTo(cx + Math.cos(b - Math.PI / 8) * r * 0.72, cy + Math.sin(b - Math.PI / 8) * r * 0.72);
+    }
+    ctx.closePath();
+  }
+  function drawCoin(x, y, r, spin) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(Math.max(0.18, Math.abs(Math.cos(spin))), 1);
+    ctx.fillStyle = GOLD; ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+    circle(0, 0, r); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff2a8'; starPath(0, 0, r * 0.62); ctx.fill();
+    ctx.fillStyle = '#d38a12'; circle(0, 0, r * 0.22); ctx.fill();
+    ctx.restore();
+  }
+  function drawShieldIcon(x, y, s) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.beginPath();
+    ctx.moveTo(0, -11); ctx.lineTo(9, -7.5); ctx.lineTo(9, -1);
+    ctx.bezierCurveTo(9, 5, 5, 9, 0, 11); ctx.bezierCurveTo(-5, 9, -9, 5, -9, -1);
+    ctx.lineTo(-9, -7.5); ctx.closePath();
+    ctx.fillStyle = '#2f5fc4'; ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+    ctx.fillStyle = GOLD; starPath(0, 0, 5); ctx.fill();
+    ctx.restore();
+  }
+  function drawTeaGlass(x, y, s) {
+    // a glass of mint tea: time to slow down
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(-6.5, -7); ctx.lineTo(6.5, -7); ctx.lineTo(5, 9); ctx.lineTo(-5, 9); ctx.closePath();
+    ctx.fillStyle = '#c7781e'; ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillRect(-4.6, -5, 2, 11);
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(-6.5, -7); ctx.lineTo(6.5, -7); ctx.lineTo(5, 9); ctx.lineTo(-5, 9); ctx.closePath(); ctx.stroke();
+    ctx.fillStyle = '#3f9a4a';
+    ctx.beginPath(); ctx.ellipse(3.5, -9.5, 5, 2.4, -0.6, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  function drawPickup(o) {
+    const p = o.pickup;
+    if (!p || p.taken) return;
+    const x = o.x + T.obstacleWidth / 2;
+    const bob = Math.sin(game.time * 3 + o.id) * 2.5;
+    const y = p.y + bob, r = T.pickupRadius;
+    if (p.type === 'coin') { drawCoin(x, y, r, game.time * 3.2 + o.id); return; }
+    const pulse = 1 + Math.sin(game.time * 5) * 0.06;
+    ctx.fillStyle = p.type === 'shield' ? 'rgba(120, 170, 255, 0.45)' : 'rgba(150, 220, 170, 0.5)';
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+    circle(x, y, (r + 5) * pulse); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.8)'; circle(x - 7, y - 8, 3); ctx.fill();
+    if (p.type === 'shield') drawShieldIcon(x, y + 1, 1.05); else drawTeaGlass(x, y + 1, 1.05);
+  }
+
+  // Short-lived flourishes: "+1" over a collected coin, sparkle rings, the shield shattering.
+  // Capped so a long run can never pile them up.
+  const effects = [];
+  function addEffect(kind) {
+    effects.push({ kind, x: game.bird.x, y: game.bird.y, t0: game.time });
+    if (effects.length > 12) effects.shift();
+  }
+  function drawEffects() {
+    for (let i = effects.length - 1; i >= 0; i--) {
+      const e = effects[i], age = game.time - e.t0, life = e.kind === 'coin' ? 0.6 : 0.45;
+      if (age > life || age < 0) { effects.splice(i, 1); continue; }
+      const k = age / life;
+      ctx.save();
+      ctx.globalAlpha = 1 - k;
+      if (e.kind === 'coin') {
+        ctx.font = '800 22px "Baloo Bhaijaan 2", "Trebuchet MS", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.fillStyle = GOLD;
+        ctx.strokeText('+1', e.x + 6, e.y - 24 - k * 30); ctx.fillText('+1', e.x + 6, e.y - 24 - k * 30);
+      } else {
+        const color = e.kind === 'shieldBreak' ? '#7fa8ff' : e.kind === 'shield' ? '#2f5fc4' : '#1f8a5a';
+        ctx.strokeStyle = color; ctx.lineWidth = 4 * (1 - k) + 1;
+        circle(e.x, e.y, 26 + k * 40); ctx.stroke();
+        if (e.kind === 'shieldBreak') {
+          ctx.fillStyle = color;
+          for (let s = 0; s < 8; s++) {
+            const a = s * Math.PI / 4 + 0.3, d = 30 + k * 55;
+            ctx.save(); ctx.translate(e.x + Math.cos(a) * d, e.y + Math.sin(a) * d); ctx.rotate(a + k * 4);
+            ctx.fillRect(-4, -2, 8, 4); ctx.restore();
+          }
+        }
+      }
+      ctx.restore();
+    }
+  }
+  function drawShieldBubble() {
+    if (!game.shield || game.state !== 'playing' && game.state !== 'paused') return;
+    const b = game.bird, r = 33 + Math.sin(game.time * 6) * 1.5;
+    ctx.fillStyle = 'rgba(120, 170, 255, 0.22)';
+    ctx.strokeStyle = 'rgba(47, 95, 196, 0.85)'; ctx.lineWidth = 3;
+    circle(b.x, b.y - 6, r); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(b.x, b.y - 6, r - 6, -2.4, -1.6); ctx.stroke();
+  }
+
+  // ---------------------------------------------------------------------------
+  // The hero: a round little bird in a fez (or another outfit). Wings beat faster
+  // right after a flap, the body tilts with speed, scarf and tassel swing.
+  // ---------------------------------------------------------------------------
+  function animateBird(dt) {
+    const b = game.bird;
+    if (game.state === 'paused') return;
+    const sinceFlap = game.time - game.lastFlapAt;
+    const boost = game.state === 'playing' && sinceFlap >= 0 && sinceFlap < 0.3 ? 1 - sinceFlap / 0.3 : 0;
+    const speed = game.state === 'over' ? 0 : game.state === 'ready' ? 9 : 12 + 26 * boost;
+    wingPhase += dt * speed * game.timeScale;
+    const target = game.state === 'ready' ? -0.08 : Math.max(-0.45, Math.min(1.15, b.vy / 620));
+    tilt += (target - tilt) * Math.min(1, dt * 14);
+    // drawn bigger on the title screen, shrinking smoothly to play size when a run starts
+    const landscape = canvas.width > canvas.height * 1.2;
+    const goal = game.state === 'ready' ? (landscape ? 1.45 : 1.9) : 1;
+    heroScale += (goal - heroScale) * Math.min(1, dt * (game.state === 'ready' ? 6 : 12));
+  }
+
+  // Draws the bird centred on (0, 0) of context c, facing right. `wing` is the wing angle, `t` the time.
+  function drawBird(c, kind, wing, t) {
+    const O = OUTFITS[kind] || OUTFITS.classic;
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    const sway = Math.sin(t * 7) * 3;
+    // scarf ends streaming behind
+    c.strokeStyle = INK; c.lineWidth = 2;
+    for (const [dy, col, len] of [[2, O.scarf2, 26], [-2, O.scarf, 30]]) {
+      c.fillStyle = col;
+      c.beginPath();
+      c.moveTo(-6, 9 + dy);
+      c.quadraticCurveTo(-18, 6 + dy + sway, -len, 9 + dy - sway);
+      c.lineTo(-len + 2, 15 + dy - sway);
+      c.quadraticCurveTo(-18, 13 + dy + sway, -5, 14 + dy);
+      c.closePath(); c.fill(); c.stroke();
+    }
+    // tail feathers
+    c.fillStyle = O.back; c.lineWidth = 2.2;
+    c.beginPath(); c.moveTo(-13, -2); c.lineTo(-24, -6); c.lineTo(-21, 1); c.lineTo(-25, 5); c.lineTo(-13, 6); c.closePath(); c.fill(); c.stroke();
+    // far wing, behind the body
+    c.save(); c.translate(-2, 0); c.rotate(-wing * 0.7 - 0.3);
+    c.fillStyle = O.wingEdge; c.lineWidth = 2;
+    c.beginPath(); c.ellipse(-8, -6, 11, 6, -0.3, 0, TAU); c.fill(); c.stroke();
+    c.restore();
+    // body
+    c.fillStyle = O.body;
+    c.beginPath(); c.arc(0, 0, 16.5, 0, TAU); c.fill();
+    c.save();
+    c.beginPath(); c.arc(0, 0, 16.5, 0, TAU); c.clip();
+    c.fillStyle = O.back; c.beginPath(); c.ellipse(-9, -4, 10, 16, 0.3, 0, TAU); c.fill();
+    c.fillStyle = O.belly;
+    c.beginPath(); c.ellipse(6, 8, 12, 10, -0.2, 0, TAU); c.fill();        // belly
+    c.beginPath(); c.ellipse(8, -3, 10, 9, 0, 0, TAU); c.fill();           // face
+    c.restore();
+    c.strokeStyle = INK; c.lineWidth = 2.6;
+    c.beginPath(); c.arc(0, 0, 16.5, 0, TAU); c.stroke();
+    // scarf knot round the neck
+    c.fillStyle = O.scarf; c.lineWidth = 2;
+    c.beginPath(); c.ellipse(1, 11, 11, 4, -0.15, 0, TAU); c.fill(); c.stroke();
+    // eyes: big and shiny, the far one a little smaller
+    for (const [ex, ey, rx, ry, px, pr] of [[3, -4.5, 4.4, 5.4, 4.4, 2.8], [11, -4, 5.4, 6.4, 12.6, 3.4]]) {
+      c.fillStyle = '#ffffff'; c.lineWidth = 1.5;
+      c.beginPath(); c.ellipse(ex, ey, rx, ry, 0, 0, TAU); c.fill(); c.stroke();
+      c.fillStyle = INK; c.beginPath(); c.arc(px, ey + 0.6, pr, 0, TAU); c.fill();
+      c.fillStyle = '#ffffff'; c.beginPath(); c.arc(px + 1.1, ey - 0.8, pr * 0.38, 0, TAU); c.fill();
+    }
+    // beak
+    c.fillStyle = '#f59a23'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(14.5, -0.5); c.quadraticCurveTo(22, 0, 25, 3); c.quadraticCurveTo(21, 6.5, 14.5, 6); c.closePath(); c.fill(); c.stroke();
+    c.strokeStyle = '#b8620e'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(16, 3.2); c.lineTo(23, 3.2); c.stroke();
+    // blush
+    c.fillStyle = 'rgba(240, 110, 100, 0.45)'; c.beginPath(); c.ellipse(15, 8, 3, 1.8, 0, 0, TAU); c.fill();
+    // near wing
+    c.save(); c.translate(-3, 3); c.rotate(-wing);
+    c.fillStyle = O.wing; c.strokeStyle = INK; c.lineWidth = 2.4;
+    c.beginPath(); c.moveTo(4, -3); c.quadraticCurveTo(-10, -12, -20, -4); c.quadraticCurveTo(-14, 2, -16, 5); c.quadraticCurveTo(-6, 8, 4, 4); c.closePath(); c.fill(); c.stroke();
+    c.strokeStyle = O.wingEdge; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(-6, -1); c.lineTo(-14, 0); c.moveTo(-4, 2); c.lineTo(-11, 4); c.stroke();
+    c.restore();
+    // little orange feet
+    c.fillStyle = '#f59a23'; c.strokeStyle = INK; c.lineWidth = 1.5;
+    for (const fx of [-1, 5]) { c.beginPath(); c.ellipse(fx, 17.5, 3, 2, 0, 0, TAU); c.fill(); c.stroke(); }
+    // headwear
+    c.save(); c.translate(3, -14); c.rotate(-0.12);
+    c.strokeStyle = INK; c.lineWidth = 2.4;
+    if (O.hat === 'fez' || O.hat === 'crown') {
+      c.fillStyle = O.hatC;
+      c.beginPath(); c.moveTo(-9.5, 3); c.lineTo(-7, -13); c.lineTo(7, -13); c.lineTo(9.5, 3); c.closePath(); c.fill();
+      c.fillStyle = O.hatDark; c.beginPath(); c.moveTo(3.5, -13); c.lineTo(7, -13); c.lineTo(9.5, 3); c.lineTo(5, 3); c.closePath(); c.fill();
+      if (O.band) { c.fillStyle = O.band; c.fillRect(-9, -2, 18, 3.4); }
+      c.beginPath(); c.moveTo(-9.5, 3); c.lineTo(-7, -13); c.lineTo(7, -13); c.lineTo(9.5, 3); c.closePath(); c.stroke();
+      c.fillStyle = O.hatTop; c.beginPath(); c.ellipse(0, -13, 7, 2.2, 0, 0, TAU); c.fill(); c.stroke();
+      if (O.hat === 'crown') {
+        c.fillStyle = GOLD; c.lineWidth = 1.8;
+        c.beginPath(); c.moveTo(-9, 1); c.lineTo(-9, -5); c.lineTo(-5, -2); c.lineTo(0, -8); c.lineTo(5, -2); c.lineTo(9, -5); c.lineTo(9, 1); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = O.gem; c.beginPath(); c.arc(0, -2, 2, 0, TAU); c.fill(); c.stroke();
+      }
+      // tassel swinging behind
+      const ts = Math.sin(t * 6) * 2.5;
+      c.strokeStyle = O.tassel; c.lineWidth = 1.8;
+      c.beginPath(); c.moveTo(0, -14); c.quadraticCurveTo(-8, -17, -11 + ts * 0.3, -6 + ts); c.stroke();
+      c.fillStyle = O.tassel; c.strokeStyle = INK; c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(-12.4 + ts * 0.3, -7 + ts); c.lineTo(-9.8 + ts * 0.3, -7 + ts); c.lineTo(-9 + ts * 0.3, -0.5 + ts); c.lineTo(-13.2 + ts * 0.3, -0.5 + ts); c.closePath(); c.fill(); c.stroke();
+    } else if (O.hat === 'turban' || O.hat === 'wrap') {
+      // cloth tail flowing back
+      c.fillStyle = O.hatDark; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(-6, 0); c.quadraticCurveTo(-16, -2 + sway, -22, 4 - sway); c.lineTo(-19, 9 - sway); c.quadraticCurveTo(-12, 5, -5, 5); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = O.hatC; c.lineWidth = 2.4;
+      c.beginPath(); c.ellipse(0, -2, 12, 7, 0, 0, TAU); c.fill(); c.stroke();
+      c.beginPath(); c.ellipse(1, -8, 9, 6, 0.1, 0, TAU); c.fill(); c.stroke();
+      c.strokeStyle = O.hatDark; c.lineWidth = 1.6;
+      c.beginPath(); c.moveTo(-10, -1); c.quadraticCurveTo(0, -7, 11, -3); c.moveTo(-7, -8); c.quadraticCurveTo(2, -12, 9, -7); c.stroke();
+      if (O.dots) { c.fillStyle = O.dots; for (const [dx, dy] of [[-5, -3], [4, -1], [-1, -9], [6, -8], [-7, 1]]) { c.beginPath(); c.arc(dx, dy, 1.1, 0, TAU); c.fill(); } }
+    } else if (O.hat === 'hood') {
+      // a djellaba hood with a point that falls back, sprinkled with golden stars
+      c.fillStyle = O.hatC; c.lineWidth = 2.4;
+      c.beginPath(); c.moveTo(-12, 6); c.quadraticCurveTo(-11, -10, 2, -11); c.quadraticCurveTo(10, -10, 12, 3);
+      c.quadraticCurveTo(0, -3, -12, 6); c.closePath(); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(-6, -9); c.quadraticCurveTo(-16, -10 + sway * 0.5, -22, 0 + sway); c.quadraticCurveTo(-15, -2, -11, 0); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = O.stars;
+      for (const [dx, dy, r] of [[-4, -5, 1.8], [5, -6, 1.5], [-15, -2, 1.4], [8, -1, 1.2]]) {
+        c.beginPath(); for (let k = 0; k < 10; k++) { const a = k * Math.PI / 5 - Math.PI / 2, rr = k % 2 ? r * 0.45 : r; c.lineTo(dx + Math.cos(a) * rr, dy + Math.sin(a) * rr); } c.closePath(); c.fill();
+      }
+    }
+    c.restore();
+  }
+
+  function heroLift() { return (heroScale - 1) * 46; }
+  function drawHero() {
+    const b = game.bird;
+    const wing = game.state === 'over' ? -0.2 : Math.sin(wingPhase) * 0.8;
+    ctx.save();
+    // On the title screen the bird is drawn bigger and a little lower (clear of the logo); both ease
+    // back to normal as the run starts. Drawing only: the bird's real position never changes.
+    ctx.translate(b.x, b.y + heroLift());
+    ctx.rotate(tilt);
+    if (heroScale !== 1) ctx.scale(heroScale, heroScale);
+    drawBird(ctx, progress.selected, wing, game.time);
+    ctx.restore();
+  }
+
+  function draw() {
+    const W = canvas.width / scale;
+    ctx = mainCtx;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    if (blendK < 1 && sceneFrom !== sceneWorld) {
+      // old place underneath, new place fading in on top (both complete scenes, so nothing pops)
+      drawScene(sceneFrom, W);
+      // The incoming scene is drawn at half resolution: it's moving and see-through while it fades in,
+      // so nobody sees the softness, and it halves the extra work on older phones.
+      const fw = Math.ceil(canvas.width / 2), fh = Math.ceil(canvas.height / 2);
+      if (fade.width !== fw || fade.height !== fh) { fade.width = fw; fade.height = fh; }
+      ctx = fadeCtx;
+      ctx.setTransform(scale / 2, 0, 0, scale / 2, 0, 0);
+      drawScene(sceneWorld, W);
+      ctx = mainCtx;
+      const k = blendK * blendK * (3 - 2 * blendK);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = k;
+      ctx.drawImage(fade, 0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = 1;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    } else {
+      drawScene(sceneWorld, W);
+    }
+    for (const o of game.obstacles) drawObstacle(o);
+    for (const o of game.obstacles) drawPickup(o);
+    // While the shield's grace period runs, the bird blinks: "you're safe for a moment"
+    const blink = game.grace > 0 && Math.floor(game.time * 14) % 2 === 0;
+    if (blink) ctx.globalAlpha = 0.35;
+    drawHero();
+    ctx.globalAlpha = 1;
+    drawShieldBubble();
+    drawEffects();
+    // Slow motion: a warm wash over the whole scene, strongest at full slow-down
+    const slowAmt = (1 - game.timeScale) / (1 - T.slowFactor);
+    if (slowAmt > 0.01) {
+      ctx.fillStyle = `rgba(255, 196, 120, ${0.16 * slowAmt})`;
+      ctx.fillRect(0, 0, W, T.worldHeight);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Overlays follow the game state
+  // ---------------------------------------------------------------------------
+  // Coins are saved the moment they're collected, so closing the browser mid-run loses none.
+  let trackedRun = -1, savedRunCoins = 0, runStartBest = progress.best;
+  function saveRunCoins() {
+    if (game.run !== trackedRun) { trackedRun = game.run; savedRunCoins = 0; runStartBest = progress.best; }
+    const extra = game.coinsThisRun - savedRunCoins;
+    if (extra > 0) { progress.addCoins(extra); savedRunCoins = game.coinsThisRun; }
+  }
+
+  function showStats() {
+    ui.bestPill.hidden = progress.best === 0;
+    ui.bestReady.textContent = String(progress.best);
+    ui.coinsReady.textContent = String(progress.coins);
+  }
+
+  let shownState = null, shownScore = -1, shownCoins = -1, shownSlow = '', shownShield = null, shownBest = -1;
+  const RING = 2 * Math.PI * 12;
+  function syncUI() {
+    if (game.score !== shownScore) { shownScore = game.score; ui.score.textContent = String(game.score); }
+    if (progress.coins !== shownCoins) { shownCoins = progress.coins; ui.hudCoinN.textContent = String(progress.coins); }
+    const best = Math.max(progress.best, game.state === 'playing' || game.state === 'paused' ? game.score : 0);
+    if (best !== shownBest) { shownBest = best; ui.hudBestN.textContent = String(best); }
+    // Power-up indicators
+    if (game.shield !== shownShield) { shownShield = game.shield; ui.pwShield.hidden = !game.shield; }
+    const slowOn = game.slowLeft > 0;
+    ui.pwSlow.hidden = !slowOn;
+    if (slowOn) {
+      const label = String(Math.ceil(game.slowLeft));
+      if (label !== shownSlow) { shownSlow = label; ui.slowLeft.textContent = label; }
+      ui.slowRing.setAttribute('stroke-dashoffset', String(RING * (1 - game.slowLeft / T.slowDuration)));
+    }
+    const s = game.state;
+    ui.again.disabled = s === 'over' && !game.canRestart();
+    if (s === shownState) return;
+    const was = shownState;
+    shownState = s;
+    const inRun = s === 'playing' || s === 'paused';
+    ui.ready.hidden = s !== 'ready' || shopIsOpen;
+    ui.lang.hidden = s !== 'ready' || shopIsOpen;   // language is chosen on the title screen only
+    ui.pause.hidden = s !== 'playing';
+    ui.sound.hidden = s === 'playing';               // in a run the corner shows the pause button and best score instead
+    ui.paused.hidden = s !== 'paused';
+    ui.over.hidden = s !== 'over';
+    ui.score.hidden = !inRun;
+    ui.hudRight.hidden = s !== 'playing';
+    ui.powers.hidden = !inRun;
+    if (s === 'ready') showStats();
+    if (s === 'over') {
+      saveRunCoins();
+      progress.recordBest(game.score);
+      ui.final.textContent = String(game.score);
+      ui.newBest.hidden = !(game.score > runStartBest);
+      ui.bestOver.textContent = String(progress.best);
+      ui.coinsOver.textContent = '+' + game.coinsThisRun;
+      ui.again.focus({ preventScroll: true });
+    } else if (was === 'over' || was === 'ready') {
+      if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shop (Phase 5; six outfits since Phase 6). Outfits change looks only, never how the bird flies.
+  // ---------------------------------------------------------------------------
+  let shopIsOpen = false;
+  var shopBuilt = false;          // 'var' so the language code above can safely check it before this runs
+  const cards = CHARACTERS.map((ch) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const cv = document.createElement('canvas');
+    cv.setAttribute('aria-hidden', 'true');
+    const name = document.createElement('div');
+    name.className = 'name';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'small-btn';
+    const need = document.createElement('div');
+    need.className = 'need';
+    card.append(cv, name, btn, need);
+    ui.shopGrid.append(card);
+    btn.addEventListener('click', () => shopAction(ch.id));
+    return { ch, card, cv, cx: cv.getContext('2d'), name, btn, need };
+  });
+
+  shopBuilt = true;
+
+  function shopAction(id) {
+    sound.unlock();
+    if (progress.owns(id)) {
+      if (progress.selected !== id && progress.select(id)) sound.play('choose');
+    } else {
+      // buy() checks "already owned" and "enough coins" itself, so a double tap charges once
+      if (progress.buy(id) === 'bought') { progress.select(id); sound.play('buy'); }
+    }
+    renderShop();
+  }
+
+  function renderShop() {
+    const t = TEXT[settings.lang];
+    ui.shopCoins.textContent = String(progress.coins);
+    for (const c of cards) {
+      const id = c.ch.id, owned = progress.owns(id), chosen = progress.selected === id;
+      c.name.textContent = t.names[id];
+      c.name.classList.toggle('long', t.names[id].length > 9);
+      c.card.classList.toggle('chosen', chosen);
+      c.btn.classList.toggle('buy', !owned);
+      if (chosen) {
+        c.btn.textContent = t.chosen;
+        c.btn.disabled = true;
+        c.need.textContent = '';
+      } else if (owned) {
+        c.btn.textContent = t.choose;
+        c.btn.disabled = false;
+        c.need.textContent = '';
+      } else {
+        c.btn.replaceChildren(document.createTextNode(t.buy + ' '), Object.assign(document.createElement('i'), { className: 'coin-ico' }),
+          document.createTextNode(String(c.ch.price)));
+        const short = c.ch.price - progress.coins;
+        c.btn.disabled = short > 0;
+        c.need.textContent = short > 0 ? t.need(short) : '';
+      }
+      c.btn.setAttribute('aria-label', `${t.names[id]}: ${c.btn.textContent.replace(/\s+/g, ' ').trim()}`);
+    }
+  }
+
+  function drawPreviews() {
+    for (const c of cards) {
+      const w = c.cv.clientWidth, h = c.cv.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (!w || !h) continue;
+      if (c.cv.width !== Math.round(w * dpr) || c.cv.height !== Math.round(h * dpr)) { c.cv.width = Math.round(w * dpr); c.cv.height = Math.round(h * dpr); }
+      const k = Math.min(c.cv.height / 64, c.cv.width / 64);   // the bird and its hat fit in about 64 units
+      c.cx.setTransform(1, 0, 0, 1, 0, 0);
+      c.cx.clearRect(0, 0, c.cv.width, c.cv.height);
+      c.cx.setTransform(k, 0, 0, k, c.cv.width / 2 + 1 * k, c.cv.height / 2 + 6 * k);
+      c.cx.globalAlpha = progress.owns(c.ch.id) ? 1 : 0.9;
+      drawBird(c.cx, c.ch.id, Math.sin(game.time * 9 + c.ch.price) * 0.6, game.time + c.ch.price);
+      c.cx.globalAlpha = 1;
+    }
+  }
+
+  function openShop() {
+    if (game.state !== 'ready' || shopIsOpen) return;
+    shopIsOpen = true;
+    renderShop();
+    ui.shop.hidden = false;
+    ui.ready.hidden = true;
+    ui.lang.hidden = true;
+    ui.shopClose.focus({ preventScroll: true });
+  }
+  function closeShop() {
+    if (!shopIsOpen) return;
+    shopIsOpen = false;
+    ui.shop.hidden = true;
+    ui.ready.hidden = game.state !== 'ready';
+    ui.lang.hidden = game.state !== 'ready';
+    showStats();
+    ui.shopOpen.focus({ preventScroll: true });
+  }
+  ui.shopOpen.addEventListener('click', () => { sound.unlock(); openShop(); });
+  ui.shopClose.addEventListener('click', closeShop);
+
+  // When the place changes, fade to the new scene and show its name briefly.
+  let shownWorld = 0;
+  function syncWorld(nowSec) {
+    if (game.world === shownWorld) return;
+    shownWorld = game.world;
+    const inRun = game.state === 'playing' || game.state === 'paused';
+    startBlend(game.world, inRun ? 1.5 : 1, nowSec);
+    if (inRun) {
+      ui.worldName.textContent = TEXT[settings.lang].worlds[game.world];
+      ui.worldName.classList.remove('show');
+      void ui.worldName.offsetWidth;          // restart the animation
+      ui.worldName.classList.add('show');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Main loop
+  // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Installing the game as an app (Phase 7). Android and computer browsers offer an install
+  // prompt the page can open; iPhone and iPad have none, so there the button explains the two taps.
+  // Hidden once the game already runs as an installed app.
+  // ---------------------------------------------------------------------------
+  function runningAsApp() {
+    try {
+      return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+    } catch (e) { return false; }
+  }
+  const appleTouch = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let installPrompt = null;
+  let installMode = !runningAsApp() && appleTouch ? 'ios' : null;   // 'prompt' | 'ios' | null
+  function syncInstall() {
+    ui.install.hidden = !installMode || runningAsApp();
+    if (ui.install.hidden) ui.installHint.hidden = true;
+  }
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();                 // keep the browser's own banner away; our button opens it
+    installPrompt = e; installMode = 'prompt';
+    syncInstall();
+  });
+  window.addEventListener('appinstalled', () => { installPrompt = null; installMode = null; syncInstall(); });
+  ui.install.addEventListener('click', async () => {
+    sound.unlock();
+    if (installMode === 'ios') { ui.installHint.hidden = !ui.installHint.hidden; return; }
+    const p = installPrompt;
+    if (!p) return;
+    installPrompt = null; installMode = null;   // a prompt can be used once; the browser offers a new one later if needed
+    try { await p.prompt(); } catch (e) { /* closed or not allowed: nothing to do */ }
+    syncInstall();
+  });
+  syncInstall();
+
+  // Offline play (Phase 7): a small helper (sw.js) keeps a copy of the game on the device.
+  // Only on the real web address; never inside the Claude preview frame or a local file.
+  try {
+    const okHost = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if ('serviceWorker' in navigator && okHost && window.top === window) {
+      const register = () => navigator.serviceWorker.register('sw.js').catch(() => {});
+      if (document.readyState === 'complete') register(); else window.addEventListener('load', register);
+    }
+  } catch (e) { /* offline support is a bonus; the game never depends on it */ }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.1);
+    last = now;
+    game.step(dt);
+    for (const e of game.takeEvents()) {
+      sound.play(e);
+      if (e === 'coin' || e === 'shield' || e === 'slow' || e === 'shieldBreak') addEffect(e);
+    }
+    saveRunCoins();
+    syncWorld(now / 1000);
+    updateBlend(now / 1000);
+    animateBird(dt);
+    draw();
+    if (shopIsOpen) drawPreviews();
+    syncUI();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame((now) => { last = now; frame(now); });
+})();
+</script>
+</body>
+</html>
