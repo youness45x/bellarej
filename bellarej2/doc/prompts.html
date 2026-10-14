@@ -1,0 +1,785 @@
+<title>Bellarej 2 Prompt Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+/* Layout: a production checklist. Sticky header with progress and group links; one card per image to generate. */
+:root {
+  --bg: #eef1f7; --panel: #ffffff; --ink: #1d2236; --muted: #5a6077; --line: #d3d8e6;
+  --majorelle: #2741c4; --saffron: #e39a12; --ok: #1f8a5a; --code: #f6f7fb;
+  --display: "Baloo Bhaijaan 2", "Trebuchet MS", sans-serif; --body: "Atkinson Hyperlegible", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #10142a; --panel: #181d38; --ink: #e9ecf8; --muted: #a3a9c4; --line: #2c3358; --majorelle: #8fa2ff; --saffron: #f0b440; --ok: #4cc28b; --code: #121630; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #10142a; --panel: #181d38; --ink: #e9ecf8; --muted: #a3a9c4; --line: #2c3358; --majorelle: #8fa2ff; --saffron: #f0b440; --ok: #4cc28b; --code: #121630; color-scheme: dark; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 920px; margin: 0 auto; padding-inline: 16px; padding-block: 0 48px; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding-block: 10px; }
+.bar .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+h1 { font-family: var(--display); font-size: 28px; line-height: 1.1; margin: 0; letter-spacing: 0.01em; }
+.progress { margin-inline-start: auto; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); }
+.progress b { color: var(--ok); }
+.meter { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 8px; }
+.meter i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .3s; }
+nav { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+nav a { text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; font-size: 13px; font-weight: 700; }
+nav a b { color: var(--muted); font-weight: 400; }
+.intro { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-block: 18px; }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.box h3 { margin: 0 0 6px; font-family: var(--display); font-size: 18px; color: var(--majorelle); }
+.box ol, .box ul { margin: 0; padding-inline-start: 20px; }
+.box li { margin-bottom: 4px; }
+.group { margin-top: 28px; scroll-margin-top: 130px; }
+.ghead h2 { font-family: var(--display); font-size: 24px; margin: 0; text-wrap: balance; }
+.ghead p { margin: 2px 0 10px; color: var(--muted); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+.card.is-done { border-color: var(--ok); }
+.card.is-done .prompt { opacity: .55; }
+.top { display: flex; align-items: center; gap: 10px; padding: 10px 12px; flex-wrap: wrap; }
+.done { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; cursor: pointer; min-width: 0; }
+.done input { width: 20px; height: 20px; accent-color: var(--ok); }
+.role { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--majorelle); border: 1px solid currentColor; border-radius: 99px; padding: 1px 8px; }
+.role.bg { color: var(--saffron); }
+.copy { margin-inline-start: auto; font: 700 14px var(--body); color: #fff; background: var(--majorelle); border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.copy.ok { background: var(--ok); }
+.copy:focus-visible, nav a:focus-visible, .done input:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.prompt { margin: 0; padding: 12px 14px; background: var(--code); border-top: 1px solid var(--line); font: 12.5px/1.55 var(--mono); white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto; }
+@media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
+</style>
+<div class="bar"><div class="wrap" style="padding-block:0">
+  <div class="row"><h1>Bellarej 2 Prompt Kit</h1><span class="progress"><b id="n-done">0</b> / 49 generated</span></div>
+  <div class="meter"><i id="meter"></i></div>
+  <nav><a href="#birds">Birds <b>10</b></a><a href="#dragons">Dragons <b>8</b></a><a href="#riders">Rider heroes <b>5</b></a><a href="#street">Street life <b>9</b></a><a href="#obstacles">Obstacles <b>3</b></a><a href="#places">Places <b>12</b></a><a href="#icons">Pickups and icons <b>2</b></a></nav>
+</div></div>
+<main class="wrap">
+  <div class="intro">
+    <div class="box"><h3>How to use it</h3><ol>
+      <li>One prompt = one image. Copy, paste, generate.</li>
+      <li>For a character, also attach its reference sheet you already made.</li>
+      <li>Tick the box when you keep the result. Ticks are saved in this browser.</li>
+    </ol></div>
+    <div class="box"><h3>Keep the image only if</h3><ul>
+      <li>The background is plain grey, with nothing behind.</li>
+      <li>No text, labels or frame anywhere.</li>
+      <li>Nothing is cut off: wings, tail, hat, feet.</li>
+      <li>All views are the same size. If not, generate again.</li>
+    </ul></div>
+    <div class="box"><h3>What each picture is for</h3><ul>
+      <li><b>Game picture:</b> cut out and used in the game.</li>
+      <li><b>Background:</b> the far scenery behind the street.</li>
+      <li>Your earlier sheets stay the style reference.</li>
+    </ul></div>
+  </div>
+  <section class="group" id="birds"><header class="ghead"><h2>Birds</h2><p>The easy stages. Birds fly ALONE, with no rider. Two prompts per bird: flying, then landing and perched (for the scene where the bird lands on Yassine&#x27;s shoulder). Attach your bird sheet.</p></header><article class="card" data-id="bird-bellarej"><div class="top"><label class="done"><input type="checkbox" id="done-bird-bellarej" data-id="bird-bellarej"><span>Bellarej, the stork</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-bellarej">Copy prompt</button></div><pre id="p-bird-bellarej" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A friendly white stork with black flight feathers, long orange beak and long orange legs trailing behind in flight, a red fez with a black tassel, a small brown leather satchel on a strap with a Berber-carpet pattern.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. BACK view gliding: wings held straight out and still.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="bird-bellarej-perch"><div class="top"><label class="done"><input type="checkbox" id="done-bird-bellarej-perch" data-id="bird-bellarej-perch"><span>Bellarej, the stork: landing and perched</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-bellarej-perch">Copy prompt</button></div><pre id="p-bird-bellarej-perch" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A friendly white stork with black flight feathers, long orange beak and long orange legs trailing behind in flight, a red fez with a black tassel, a small brown leather satchel on a strap with a Berber-carpet pattern.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same bird, nothing under it (no shoulder, no branch, no ground drawn):
+1. LANDING, SIDE view facing RIGHT: wings spread wide and tilted back to brake, feet stretched forward to grab.
+2. PERCHED, SIDE view facing RIGHT: wings neatly folded, feet gripping as if sitting on someone&#x27;s shoulder, happy.
+3. PERCHED, FRONT view, wings folded.
+4. PERCHED, BACK view, wings folded.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="bird-fez"><div class="top"><label class="done"><input type="checkbox" id="done-bird-fez" data-id="bird-fez"><span>Fez, the sparrow</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-fez">Copy prompt</button></div><pre id="p-bird-fez" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A round brown sparrow with a cream belly and big shiny eyes, a red fez with a black tassel, a red scarf with a gold pattern flowing behind, a small satchel with a carpet pattern.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. BACK view gliding: wings held straight out and still.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="bird-fez-perch"><div class="top"><label class="done"><input type="checkbox" id="done-bird-fez-perch" data-id="bird-fez-perch"><span>Fez, the sparrow: landing and perched</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-fez-perch">Copy prompt</button></div><pre id="p-bird-fez-perch" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A round brown sparrow with a cream belly and big shiny eyes, a red fez with a black tassel, a red scarf with a gold pattern flowing behind, a small satchel with a carpet pattern.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same bird, nothing under it (no shoulder, no branch, no ground drawn):
+1. LANDING, SIDE view facing RIGHT: wings spread wide and tilted back to brake, feet stretched forward to grab.
+2. PERCHED, SIDE view facing RIGHT: wings neatly folded, feet gripping as if sitting on someone&#x27;s shoulder, happy.
+3. PERCHED, FRONT view, wings folded.
+4. PERCHED, BACK view, wings folded.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="bird-hudhud"><div class="top"><label class="done"><input type="checkbox" id="done-bird-hudhud" data-id="bird-hudhud"><span>Hudhud, the hoopoe</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-hudhud">Copy prompt</button></div><pre id="p-bird-hudhud" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A hoopoe with cinnamon-orange feathers, bold black-and-white striped wings and tail, a tall fan-shaped crest with black tips, a long thin curved beak, a small carpet-patterned harness with tiny golden bells.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. BACK view gliding: wings held straight out and still.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="bird-hudhud-perch"><div class="top"><label class="done"><input type="checkbox" id="done-bird-hudhud-perch" data-id="bird-hudhud-perch"><span>Hudhud, the hoopoe: landing and perched</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-hudhud-perch">Copy prompt</button></div><pre id="p-bird-hudhud-perch" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A hoopoe with cinnamon-orange feathers, bold black-and-white striped wings and tail, a tall fan-shaped crest with black tips, a long thin curved beak, a small carpet-patterned harness with tiny golden bells.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same bird, nothing under it (no shoulder, no branch, no ground drawn):
+1. LANDING, SIDE view facing RIGHT: wings spread wide and tilted back to brake, feet stretched forward to grab.
+2. PERCHED, SIDE view facing RIGHT: wings neatly folded, feet gripping as if sitting on someone&#x27;s shoulder, happy.
+3. PERCHED, FRONT view, wings folded.
+4. PERCHED, BACK view, wings folded.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="bird-saqr"><div class="top"><label class="done"><input type="checkbox" id="done-bird-saqr" data-id="bird-saqr"><span>Saqr, the falcon</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-saqr">Copy prompt</button></div><pre id="p-bird-saqr" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A slim falcon with a slate blue-grey back and wings, a speckled cream chest, yellow beak and feet, a small golden ornamental cap on the head, a carpet-patterned harness with golden tassels.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. BACK view gliding: wings held straight out and still.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="bird-saqr-perch"><div class="top"><label class="done"><input type="checkbox" id="done-bird-saqr-perch" data-id="bird-saqr-perch"><span>Saqr, the falcon: landing and perched</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-saqr-perch">Copy prompt</button></div><pre id="p-bird-saqr-perch" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A slim falcon with a slate blue-grey back and wings, a speckled cream chest, yellow beak and feet, a small golden ornamental cap on the head, a carpet-patterned harness with golden tassels.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same bird, nothing under it (no shoulder, no branch, no ground drawn):
+1. LANDING, SIDE view facing RIGHT: wings spread wide and tilted back to brake, feet stretched forward to grab.
+2. PERCHED, SIDE view facing RIGHT: wings neatly folded, feet gripping as if sitting on someone&#x27;s shoulder, happy.
+3. PERCHED, FRONT view, wings folded.
+4. PERCHED, BACK view, wings folded.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="bird-bouma"><div class="top"><label class="done"><input type="checkbox" id="done-bird-bouma" data-id="bird-bouma"><span>Bouma, the owl</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-bouma">Copy prompt</button></div><pre id="p-bird-bouma" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A round owl with a pale heart-shaped face and big dark eyes, brown-and-cream wings, wearing a navy-blue djellaba hood decorated with small golden stars and crescent moons, golden tassels.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. BACK view gliding: wings held straight out and still.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="bird-bouma-perch"><div class="top"><label class="done"><input type="checkbox" id="done-bird-bouma-perch" data-id="bird-bouma-perch"><span>Bouma, the owl: landing and perched</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-bird-bouma-perch">Copy prompt</button></div><pre id="p-bird-bouma-perch" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A round owl with a pale heart-shaped face and big dark eyes, brown-and-cream wings, wearing a navy-blue djellaba hood decorated with small golden stars and crescent moons, golden tassels.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same bird, nothing under it (no shoulder, no branch, no ground drawn):
+1. LANDING, SIDE view facing RIGHT: wings spread wide and tilted back to brake, feet stretched forward to grab.
+2. PERCHED, SIDE view facing RIGHT: wings neatly folded, feet gripping as if sitting on someone&#x27;s shoulder, happy.
+3. PERCHED, FRONT view, wings folded.
+4. PERCHED, BACK view, wings folded.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article></section><section class="group" id="dragons"><header class="ghead"><h2>Dragons</h2><p>The power mounts. Saddles are empty: the riders are separate pictures.</p></header><article class="card" data-id="dragon-atlas"><div class="top"><label class="done"><input type="checkbox" id="done-dragon-atlas" data-id="dragon-atlas"><span>Atlas, fire dragon</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-dragon-atlas">Copy prompt</button></div><pre id="p-dragon-atlas" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A young red-and-terracotta fire dragon, cute but heroic: cream belly plates, curved cream horns, orange wing membranes, small back spikes, an empty Berber-carpet saddle in deep red and navy with gold tassels and small brass bells, friendly grin.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. ABILITY pose, SIDE view facing RIGHT: breathing a stream of orange fire forward, the fire fully inside the image.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="dragon-zarqa"><div class="top"><label class="done"><input type="checkbox" id="done-dragon-zarqa" data-id="dragon-zarqa"><span>Zarqa, water dragon</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-dragon-zarqa">Copy prompt</button></div><pre id="p-dragon-zarqa" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A young Majorelle-blue water dragon: pale-blue belly, fin-like crest and tail fin, translucent light-blue wing membranes, an empty carpet saddle in red and gold with brass bells, cheerful face.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. ABILITY pose, SIDE view facing RIGHT: a curling wave of water surging forward, the wave fully inside the image.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="dragon-raml"><div class="top"><label class="done"><input type="checkbox" id="done-dragon-raml" data-id="dragon-raml"><span>Raml, sand dragon</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-dragon-raml">Copy prompt</button></div><pre id="p-dragon-raml" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A young sand-gold desert dragon: scales patterned like dune ripples, cream belly, short curled horns, tan wing membranes, an empty carpet saddle in green and red with brass bells, playful face.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. ABILITY pose, SIDE view facing RIGHT: curled into a fast spinning dash, eyes squeezed shut, laughing. Draw NO sand and no effect around it: the game adds the sand swirl itself.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="dragon-zellige"><div class="top"><label class="done"><input type="checkbox" id="done-dragon-zellige" data-id="dragon-zellige"><span>Zellige, crystal dragon</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-dragon-zellige">Copy prompt</button></div><pre id="p-dragon-zellige" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A young mint-green crystal dragon covered in small mosaic-tile scales in green, white and blue, crystal spikes on the back and a crystal tail tip, an empty carpet saddle in red and blue with brass bells, proud smile.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. ABILITY pose, SIDE view facing RIGHT: swinging its tail and shattering a burst of green crystals. The crystals are SOLID shapes with dark outlines; NO motion trail, no swoosh, no glow behind them. All fully inside the image.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="dragon-najma"><div class="top"><label class="done"><input type="checkbox" id="done-dragon-najma" data-id="dragon-najma"><span>Najma, star dragon</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-dragon-najma">Copy prompt</button></div><pre id="p-dragon-najma" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A young MIDNIGHT-BLUE star dragon (not purple): bright silver-white constellation dots on the scales (flat color, no glow), wings like a starry night sky, pearl-silver CRESCENT-MOON shaped horns, a small crescent at the tail tip, an empty carpet saddle in deep red and gold with brass bells, gentle smile.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the SAME character in every cell, always flying:
+1. BACK view from behind and slightly above (this is the in-game camera), wings raised high.
+2. BACK view, same position, wings pushed down (second wing-beat frame).
+3. TOP view seen straight from above, wings fully spread.
+4. SIDE view facing RIGHT, wings mid-beat.
+5. FRONT view, flying toward the viewer, wings spread.
+6. ABILITY pose, SIDE view facing RIGHT: roaring, with a ring of small silver-white cartoon stars bursting forward. The stars are SOLID, opaque shapes with dark outlines: no glow, no haze, no see-through light. The ring is fully inside the image.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="dragon-raml-fix"><div class="top"><label class="done"><input type="checkbox" id="done-dragon-raml-fix" data-id="dragon-raml-fix"><span>Raml: ability pose only (fix)</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-dragon-raml-fix">Copy prompt</button></div><pre id="p-dragon-raml-fix" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A young sand-gold desert dragon: scales patterned like dune ripples, cream belly, short curled horns, tan wing membranes, an empty carpet saddle in green and red with brass bells, playful face.
+
+LAYOUT: landscape 3:2 image with ONE view only, centered: ABILITY pose, SIDE view facing RIGHT, at the same scale as the attached sheet: curled into a fast spinning dash, eyes squeezed shut, laughing, wings tucked half-open. Draw NO sand, no dust and no effect around it: the game adds the sand swirl itself.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="dragon-zellige-fix"><div class="top"><label class="done"><input type="checkbox" id="done-dragon-zellige-fix" data-id="dragon-zellige-fix"><span>Zellige: ability pose only (fix)</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-dragon-zellige-fix">Copy prompt</button></div><pre id="p-dragon-zellige-fix" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A young mint-green crystal dragon covered in small mosaic-tile scales in green, white and blue, crystal spikes on the back and a crystal tail tip, an empty carpet saddle in red and blue with brass bells, proud smile.
+
+LAYOUT: landscape 3:2 image with ONE view only, centered, at the same scale as the attached sheet: ABILITY pose, SIDE view facing RIGHT: swinging its tail and shattering a burst of green crystals. The crystals are SOLID shapes with dark outlines, like the crystal on its tail tip. NO motion trail, no swoosh line, no glow, no haze. All fully inside the image.
+
+No glow, no motion lines, no sparkles, no effects of any kind: the game adds those itself.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="dragon-najma-fix"><div class="top"><label class="done"><input type="checkbox" id="done-dragon-najma-fix" data-id="dragon-najma-fix"><span>Najma: ability pose only (fix)</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-dragon-najma-fix">Copy prompt</button></div><pre id="p-dragon-najma-fix" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A young MIDNIGHT-BLUE star dragon (not purple): bright silver-white constellation dots on the scales (flat color, no glow), wings like a starry night sky, pearl-silver CRESCENT-MOON shaped horns, a small crescent at the tail tip, an empty carpet saddle in deep red and gold with brass bells, gentle smile.
+
+LAYOUT: landscape 3:2 image with ONE view only, centered, at the same scale as the attached sheet: ABILITY pose, SIDE view facing RIGHT: roaring, mouth open, with a ring of small silver-white cartoon stars bursting forward. The stars are SOLID five-pointed shapes with dark outlines. NO glow, no sparkle dust, no haze, no see-through light. The ring is fully inside the image.
+
+No glow, no motion lines, no sparkles, no effects of any kind: the game adds those itself.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article></section><section class="group" id="riders"><header class="ghead"><h2>Rider heroes</h2><p>Riders ride the DRAGONS only. Drawn without any mount, so the game can put any rider on any dragon.</p></header><article class="card" data-id="rider-yassine"><div class="top"><label class="done"><input type="checkbox" id="done-rider-yassine" data-id="rider-yassine"><span>Yassine</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-rider-yassine">Copy prompt</button></div><pre id="p-rider-yassine" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: Yassine, an original 13-year-old Moroccan boy: short curly black hair, freckles on the nose, a red fez with a black tassel, a cream long-sleeved buttoned shirt, a CLOSED embroidered Moroccan gilet in terracotta and mint green with gold trim, olive-green sirwal trousers (clean, no patches), yellow babouche slippers, a small brown leather satchel across the chest with a wooden slingshot tucked in, a red scarf around the neck in EVERY view, warm confident grin. NOT: no purple vest, no bare chest, no patched trousers.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows. The character is ALONE: NO mount, NO saddle, NO animal under them.
+1. RIDING pose, BACK view from behind and slightly above: sitting astride an invisible saddle, knees bent outward, hands forward holding invisible reins, clothes and scarf blowing backward in the wind.
+2. Same RIDING pose, SIDE view facing RIGHT.
+3. Same RIDING pose, FRONT view.
+4. Standing, FRONT view, full body, relaxed confident pose.
+5. Standing, BACK view, full body.
+6. Two head close-ups side by side: big happy smile, and surprised (only this cell may be drawn larger).
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="rider-salma"><div class="top"><label class="done"><input type="checkbox" id="done-rider-salma" data-id="rider-salma"><span>Salma</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-rider-salma">Copy prompt</button></div><pre id="p-rider-salma" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: Salma, an original 13-year-old Moroccan girl, adventurous and clever: dark hair in a single thick braid tucked under a teal headscarf, tiny silver stud earrings (no hoops), a cream tunic with Majorelle-blue embroidery, a long saffron-yellow sash, terracotta trousers with a small zellige-pattern border at the ankles, red babouche slippers, a leather satchel full of rolled maps, a small brass compass on a cord, brave determined smile.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows. The character is ALONE: NO mount, NO saddle, NO animal under them.
+1. RIDING pose, BACK view from behind and slightly above: sitting astride an invisible saddle, knees bent outward, hands forward holding invisible reins, clothes and scarf blowing backward in the wind.
+2. Same RIDING pose, SIDE view facing RIGHT.
+3. Same RIDING pose, FRONT view.
+4. Standing, FRONT view, full body, relaxed confident pose.
+5. Standing, BACK view, full body.
+6. Two head close-ups side by side: big happy smile, and surprised (only this cell may be drawn larger).
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="rider-jeddi"><div class="top"><label class="done"><input type="checkbox" id="done-rider-jeddi" data-id="rider-jeddi"><span>Jeddi Hmad</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-rider-jeddi">Copy prompt</button></div><pre id="p-rider-jeddi" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: Jeddi Hmad, a kind old Moroccan storyteller grandfather: white beard, round golden glasses, a red fez with a black tassel, a brown wool djellaba with the hood down, a white embroidered scarf, a small leather bag with a brass bell, a carved wooden walking cane held in one hand, gentle laughing face.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows. The character is ALONE: NO mount, NO saddle, NO animal under them.
+1. RIDING pose, BACK view from behind and slightly above: sitting astride an invisible saddle, knees bent outward, hands forward holding invisible reins, clothes and scarf blowing backward in the wind.
+2. Same RIDING pose, SIDE view facing RIGHT.
+3. Same RIDING pose, FRONT view.
+4. Standing, FRONT view, full body, relaxed confident pose.
+5. Standing, BACK view, full body.
+6. Two head close-ups side by side: big happy smile, and surprised (only this cell may be drawn larger).
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="rider-yassine-story"><div class="top"><label class="done"><input type="checkbox" id="done-rider-yassine-story" data-id="rider-yassine-story"><span>Yassine: whistle and jump</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-rider-yassine-story">Copy prompt</button></div><pre id="p-rider-yassine-story" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: Yassine, an original 13-year-old Moroccan boy: short curly black hair, freckles on the nose, a red fez with a black tassel, a cream long-sleeved buttoned shirt, a CLOSED embroidered Moroccan gilet in terracotta and mint green with gold trim, olive-green sirwal trousers (clean, no patches), yellow babouche slippers, a small brown leather satchel across the chest with a wooden slingshot tucked in, a red scarf around the neck in EVERY view, warm confident grin. NOT: no purple vest, no bare chest, no patched trousers.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, Yassine ALONE (no bird, no dragon, no animal drawn anywhere), standing on nothing (no ground drawn):
+1. Standing, 3/4 FRONT view, right arm relaxed, head turned up toward his right shoulder, smiling proudly (a bird will be added there by the game; do NOT draw it).
+2. WHISTLING, 3/4 FRONT view: two fingers in his mouth, cheeks puffed, eyes looking up at the sky.
+3. WHISTLING, BACK view from behind and slightly above, two fingers at his mouth, looking up.
+4. Crouching, ready to jump, SIDE view facing RIGHT, arms swung back.
+5. LEAPING up and forward, SIDE view facing RIGHT, legs apart as if about to land on a saddle, scarf flying.
+6. LEAPING, BACK view from behind and slightly above, arms forward, legs apart.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="rider-mishmish"><div class="top"><label class="done"><input type="checkbox" id="done-rider-mishmish" data-id="rider-mishmish"><span>Mishmish, the cat</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-rider-mishmish">Copy prompt</button></div><pre id="p-rider-mishmish" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: Mishmish, an original ginger striped street cat with big green eyes, a red scarf with a small brass bell.
+
+LAYOUT: landscape 3:2 image, a grid of 3 columns x 2 rows, the cat ALONE (no mount, no animal under it):
+1. PERCHED pose (crouched, gripping with its paws as if riding on top of a mount&#x27;s head), BACK view from behind and slightly above, scarf blowing backward.
+2. Same perched pose, SIDE view facing RIGHT.
+3. Same perched pose, FRONT view.
+4. Sitting, FRONT view.
+5. Sitting, BACK view, tail curled.
+6. Two head close-ups side by side: laughing, and scared (only this cell may be drawn larger).
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article></section><section class="group" id="street"><header class="ghead"><h2>Street life</h2><p>Background people and animals. They are never obstacles.</p></header><article class="card" data-id="npc-washerwoman"><div class="top"><label class="done"><input type="checkbox" id="done-npc-washerwoman" data-id="npc-washerwoman"><span>Washerwoman</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-npc-washerwoman">Copy prompt</button></div><pre id="p-npc-washerwoman" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A cheerful young Moroccan woman in a modest long embroidered kaftan and a headscarf, family-friendly.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same character, full body, standing on nothing (no ground drawn):
+1. Hanging a white sheet on a short piece of rope (draw only a short rope, no balcony, no building), 3/4 front view.
+2. Pegging the sheet, arms slightly lower (next animation frame), 3/4 front view.
+3. BACK view, standing.
+4. Reaction pose: waving happily at the player.
+Draw her wooden laundry basket as a separate small object next to view 4.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+STYLE MATCH: an image of a DIFFERENT street character is attached as the style reference: match its art style exactly (same line thickness, same soft painted shading, same realistic body proportions, adults about 6 heads tall). Do NOT copy that character&#x27;s face, clothes or props: only the drawing style.</pre></article><article class="card" data-id="npc-kids"><div class="top"><label class="done"><input type="checkbox" id="done-npc-kids" data-id="npc-kids"><span>Street kids</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-npc-kids">Copy prompt</button></div><pre id="p-npc-kids" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: Two kids about 8 years old playing together: a boy in a small red fez, cream shirt and a sky-blue gilet, and a girl in a yellow headscarf and green dress; they push a wooden hoop with a stick.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same character, full body, standing on nothing (no ground drawn):
+1. Both running, the boy rolling the hoop with the stick, 3/4 front view.
+2. Both running, the hoop a little further ahead (next animation frame), 3/4 front view.
+3. BACK view, standing.
+4. Reaction pose: both jumping and clapping.
+Keep the two kids together in every view.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+STYLE MATCH: an image of a DIFFERENT street character is attached as the style reference: match its art style exactly (same line thickness, same soft painted shading, same realistic body proportions, adults about 6 heads tall). Do NOT copy that character&#x27;s face, clothes or props: only the drawing style.</pre></article><article class="card" data-id="npc-tea"><div class="top"><label class="done"><input type="checkbox" id="done-npc-tea" data-id="npc-tea"><span>Tea seller</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-npc-tea">Copy prompt</button></div><pre id="p-npc-tea" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A smiling man with a short beard, red fez, white embroidered djellaba, a silver teapot and a brass tray of small mint-tea glasses.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same character, full body, standing on nothing (no ground drawn):
+1. Pouring tea from high above into a small glass, 3/4 front view.
+2. Pouring, the stream of tea a little longer (next animation frame), 3/4 front view.
+3. BACK view, standing.
+4. Reaction pose: raising a glass of tea toward the player.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+STYLE MATCH: an image of a DIFFERENT street character is attached as the style reference: match its art style exactly (same line thickness, same soft painted shading, same realistic body proportions, adults about 6 heads tall). Do NOT copy that character&#x27;s face, clothes or props: only the drawing style.</pre></article><article class="card" data-id="npc-guerrab"><div class="top"><label class="done"><input type="checkbox" id="done-npc-guerrab" data-id="npc-guerrab"><span>Water seller (guerrab)</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-npc-guerrab">Copy prompt</button></div><pre id="p-npc-guerrab" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A traditional Moroccan water seller in a red embroidered costume, a huge wide-brimmed hat covered in colorful pom-pom tassels, brass cups on a leather bandolier, a goatskin water bag, a small brass bell.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same character, full body, standing on nothing (no ground drawn):
+1. Pouring water from the goatskin into a brass cup, 3/4 front view.
+2. Pouring, cup held a little higher (next animation frame), 3/4 front view.
+3. BACK view, standing.
+4. Reaction pose: ringing his bell and laughing.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+STYLE MATCH: an image of a DIFFERENT street character is attached as the style reference: match its art style exactly (same line thickness, same soft painted shading, same realistic body proportions, adults about 6 heads tall). Do NOT copy that character&#x27;s face, clothes or props: only the drawing style.</pre></article><article class="card" data-id="npc-spice"><div class="top"><label class="done"><input type="checkbox" id="done-npc-spice" data-id="npc-spice"><span>Spice merchant</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-npc-spice">Copy prompt</button></div><pre id="p-npc-spice" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A kind elderly spice merchant with a white beard, white turban and Majorelle-blue djellaba, holding a scoop of red paprika.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same character, full body, standing on nothing (no ground drawn):
+1. Scooping spice from one small sack (draw only that one sack), 3/4 front view.
+2. Lifting the scoop, a little spice falling (next animation frame), 3/4 front view.
+3. BACK view, standing.
+4. Reaction pose: shaking his fist but laughing, friendly cartoon style.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+STYLE MATCH: an image of a DIFFERENT street character is attached as the style reference: match its art style exactly (same line thickness, same soft painted shading, same realistic body proportions, adults about 6 heads tall). Do NOT copy that character&#x27;s face, clothes or props: only the drawing style.</pre></article><article class="card" data-id="npc-grandmother"><div class="top"><label class="done"><input type="checkbox" id="done-npc-grandmother" data-id="npc-grandmother"><span>Grandmother</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-npc-grandmother">Copy prompt</button></div><pre id="p-npc-grandmother" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: A sweet grandmother with round glasses, a white headscarf and a purple embroidered kaftan, holding a round Moroccan bread loaf (khobz).
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same character, full body, standing on nothing (no ground drawn):
+1. Leaning forward and waving, drawn from the waist up as if at a window (do NOT draw the window), 3/4 front view.
+2. Waving, hand on the other side (next animation frame), 3/4 front view.
+3. BACK view, standing.
+4. Reaction pose: gently tossing the bread loaf forward.
+Views 1, 2 and 4 are waist-up; view 3 is the full body from behind.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+STYLE MATCH: an image of a DIFFERENT street character is attached as the style reference: match its art style exactly (same line thickness, same soft painted shading, same realistic body proportions, adults about 6 heads tall). Do NOT copy that character&#x27;s face, clothes or props: only the drawing style.</pre></article><article class="card" data-id="npc-musicians"><div class="top"><label class="done"><input type="checkbox" id="done-npc-musicians" data-id="npc-musicians"><span>Gnawa musicians</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-npc-musicians">Copy prompt</button></div><pre id="p-npc-musicians" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: Two street musicians together: one in a yellow robe with a big double-headed drum, one in a blue robe with metal qraqeb castanets, both in embroidered caps decorated with cowrie shells.
+
+LAYOUT: wide landscape 2:1 image, one row of 4 views of the same character, full body, standing on nothing (no ground drawn):
+1. Both dancing and playing, 3/4 front view.
+2. Both dancing, other foot forward (next animation frame), 3/4 front view.
+3. BACK view, standing.
+4. Reaction pose: both laughing with instruments raised.
+Keep the two musicians together in every view.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+STYLE MATCH: an image of a DIFFERENT street character is attached as the style reference: match its art style exactly (same line thickness, same soft painted shading, same realistic body proportions, adults about 6 heads tall). Do NOT copy that character&#x27;s face, clothes or props: only the drawing style.</pre></article><article class="card" data-id="npc-cats"><div class="top"><label class="done"><input type="checkbox" id="done-npc-cats" data-id="npc-cats"><span>Rooftop cats</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-npc-cats">Copy prompt</button></div><pre id="p-npc-cats" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: four different friendly street cats of a Moroccan medina.
+
+LAYOUT: wide landscape 2:1 image, one row of 5 views, each a different cat, all at the same scale, nothing under them:
+1. A ginger tabby sleeping curled up.
+2. A black-and-white cat stretching.
+3. A calico cat sitting and watching.
+4. A grey cat jumping, seen from the side facing RIGHT.
+5. The ginger tabby running away, seen from behind.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article><article class="card" data-id="npc-pigeons"><div class="top"><label class="done"><input type="checkbox" id="done-npc-pigeons" data-id="npc-pigeons"><span>Pigeons</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-npc-pigeons">Copy prompt</button></div><pre id="p-npc-pigeons" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: grey city pigeons with a green-and-purple sheen on the neck, cute cartoon style.
+
+LAYOUT: wide landscape 2:1 image, one row of 5 views of the same pigeon:
+1. Standing, side view facing RIGHT.
+2. Pecking the ground (no ground drawn).
+3. Taking off, wings up.
+4. Flying, seen from BEHIND, wings up.
+5. Flying, seen from BEHIND, wings down.
+
+ORIGINALITY: completely original design; must not resemble any existing film, cartoon or video-game character.
+
+REFERENCE: if an image is attached, keep its design, colors, outfit and proportions exactly; only the pose and camera angle change.</pre></article></section><section class="group" id="obstacles"><header class="ghead"><h2>Obstacles</h2><p>No glow on these pictures: the game makes breakable objects glow itself.</p></header><article class="card" data-id="obst-easy"><div class="top"><label class="done"><input type="checkbox" id="done-obst-easy" data-id="obst-easy"><span>Easy obstacles</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-obst-easy">Copy prompt</button></div><pre id="p-obst-easy" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: EASY obstacles for a runner game set in a Moroccan medina. Each object is drawn alone, with no wall, no street and no people around it.
+
+LAYOUT: landscape 5:3 image, a grid of 5 columns x 2 rows, one object per column, all at the same scale. Row 1: each object in FRONT view, straight on, as a player flying toward it sees it. Row 2: the same object in SIDE view.
+Column 1: a Berber carpet hanging from a wooden pole, with tassels
+Column 2: a rope with five clothes pegged on it (white sheet, blue shirt, red towel, striped djellaba, small shirt), short rope ends
+Column 3: a stack of terracotta clay pots and jars
+Column 4: a wooden crate with iron corners
+Column 5: a low market-stall awning: striped blue-and-white fabric on a wooden frame over a table of brass teapots
+
+No glow, no motion lines, no sparkles, no effects of any kind: the game adds those itself.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="obst-medium"><div class="top"><label class="done"><input type="checkbox" id="done-obst-medium" data-id="obst-medium"><span>Medium obstacles</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-obst-medium">Copy prompt</button></div><pre id="p-obst-medium" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: MEDIUM obstacles for a runner game set in a Moroccan medina. Each object is drawn alone, with no wall, no street and no people around it.
+
+LAYOUT: landscape 5:3 image, a grid of 5 columns x 2 rows, one object per column, all at the same scale. Row 1: each object in FRONT view, straight on, as a player flying toward it sees it. Row 2: SIDE view, except column 3 where row 2 shows the shutters OPEN.
+Column 1: a brass lantern on a chain hanging from a short wooden wall bracket
+Column 2: a grey donkey pulling a wooden cart loaded with carpets and baskets
+Column 3: a pair of teal wooden window shutters with carved lattice
+Column 4: a pile of jute sacks overflowing with red, yellow and green spices
+Column 5: a stack of woven baskets and copper pots
+
+No glow, no motion lines, no sparkles, no effects of any kind: the game adds those itself.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="obst-hard"><div class="top"><label class="done"><input type="checkbox" id="done-obst-hard" data-id="obst-hard"><span>Hard obstacles</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-obst-hard">Copy prompt</button></div><pre id="p-obst-hard" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, wings, tail, feet and hat fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: HARD obstacles for a runner game set in a Moroccan medina. Each object is drawn alone, with no wall, no street and no people around it.
+
+LAYOUT: landscape 5:3 image, a grid of 5 columns x 2 rows, one object per column, all at the same scale. Row 1: each object in FRONT view, straight on, as a player flying toward it sees it. Row 2: SIDE view, except column 2 where row 2 shows the scaffolding COLLAPSING, planks falling.
+Column 1: a stone arch gate with a blue zellige frame (never breakable)
+Column 2: wooden scaffolding made of poles and planks
+Column 3: a big brass chandelier with five small lanterns on chains
+Column 4: a rope strung with five colorful paper kites and ribbons
+Column 5: a narrow wooden market cart on wheels with a red awning
+
+No glow, no motion lines, no sparkles, no effects of any kind: the game adds those itself.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article></section><section class="group" id="places"><header class="ghead"><h2>Places</h2><p>For each place: one kit of building pieces (game picture) and one far background.</p></header><article class="card" data-id="kit-marrakech"><div class="top"><label class="done"><input type="checkbox" id="done-kit-marrakech" data-id="kit-marrakech"><span>Marrakech: building kit</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-kit-marrakech">Copy prompt</button></div><pre id="p-kit-marrakech" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every piece is complete and nothing is cropped, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: modular building pieces for the Marrakech district of a Moroccan medina, used to build a 3D street. Materials and colors: terracotta and salmon-pink plastered walls, green glazed-tile roof edges, carved cedar doors and one Majorelle-blue door, brass lanterns, pink bougainvillea in pots. Daylight, soft light from the upper left.
+
+LAYOUT: landscape 2:1 image, a grid of 4 columns x 2 rows. Every piece is drawn ORTHOGRAPHIC: perfectly straight-on front elevation, no perspective, no vanishing points. All pieces exactly the same height and scale, sitting on one invisible baseline, with straight vertical left and right edges so they can be placed side by side:
+1. A plain wall section that repeats seamlessly left to right.
+2. A wall with an arched front door.
+3. A wall with two shuttered windows.
+4. A wall with a wooden balcony and carved lattice railing.
+5. A taller corner tower piece.
+6. A rooftop edge strip that repeats seamlessly left to right.
+7. A shop front with an awning.
+8. A set of small separate details: a lantern on a wall bracket, two potted plants, a small hanging carpet.
+
+No people, no animals, no text.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="bg-marrakech"><div class="top"><label class="done"><input type="checkbox" id="done-bg-marrakech" data-id="bg-marrakech"><span>Marrakech: far background</span></label><span class="role bg">Background</span><button type="button" class="copy" data-target="p-bg-marrakech">Copy prompt</button></div><pre id="p-bg-marrakech" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+BACKGROUND RULES: a very wide panorama, landscape 3:1. Far background only: sky and distant scenery. No characters, no animals in front, no text, no frame, no buildings cut at the left or right edge. The left and right edges must match perfectly so the image repeats seamlessly side by side. The bottom 15% fades into one flat, even band of warm terracotta so the game&#x27;s street can sit in front of it.
+
+SUBJECT: the far background of the Marrakech district: a tall square stone minaret in Marrakech style with a small lantern top and three golden balls, the snowy High Atlas mountains, palm groves, a flat-roofed terracotta medina far away, a soft blue morning sky with puffy clouds.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="kit-fes"><div class="top"><label class="done"><input type="checkbox" id="done-kit-fes" data-id="kit-fes"><span>Fès: building kit</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-kit-fes">Copy prompt</button></div><pre id="p-kit-fes" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every piece is complete and nothing is cropped, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: modular building pieces for the Fès district of a Moroccan medina, used to build a 3D street. Materials and colors: sand-ochre walls, many small green-tiled roofs, carved cedar-wood balconies, a doorway framed in blue-and-white zellige, brass door knockers. Daylight, soft light from the upper left.
+
+LAYOUT: landscape 2:1 image, a grid of 4 columns x 2 rows. Every piece is drawn ORTHOGRAPHIC: perfectly straight-on front elevation, no perspective, no vanishing points. All pieces exactly the same height and scale, sitting on one invisible baseline, with straight vertical left and right edges so they can be placed side by side:
+1. A plain wall section that repeats seamlessly left to right.
+2. A wall with an arched front door.
+3. A wall with two shuttered windows.
+4. A wall with a wooden balcony and carved lattice railing.
+5. A taller corner tower piece.
+6. A rooftop edge strip that repeats seamlessly left to right.
+7. A shop front with an awning.
+8. A set of small separate details: a lantern on a wall bracket, two potted plants, a small hanging carpet.
+
+No people, no animals, no text.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="bg-fes"><div class="top"><label class="done"><input type="checkbox" id="done-bg-fes" data-id="bg-fes"><span>Fès: far background</span></label><span class="role bg">Background</span><button type="button" class="copy" data-target="p-bg-fes">Copy prompt</button></div><pre id="p-bg-fes" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+BACKGROUND RULES: a very wide panorama, landscape 3:1. Far background only: sky and distant scenery. No characters, no animals in front, no text, no frame, no buildings cut at the left or right edge. The left and right edges must match perfectly so the image repeats seamlessly side by side. The bottom 15% fades into one flat, even band of sand ochre so the game&#x27;s street can sit in front of it.
+
+SUBJECT: the far background of the Fès district: a dense medina climbing a hillside with many green-tiled roofs and minarets, olive-green hills, a monumental gate with blue tiles in the distance, golden afternoon light.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="kit-chefchaouen"><div class="top"><label class="done"><input type="checkbox" id="done-kit-chefchaouen" data-id="kit-chefchaouen"><span>Chefchaouen: building kit</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-kit-chefchaouen">Copy prompt</button></div><pre id="p-kit-chefchaouen" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every piece is complete and nothing is cropped, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: modular building pieces for the Chefchaouen district of a Moroccan medina, used to build a 3D street. Materials and colors: walls painted in shades of blue and white, blue steps, terracotta flower pots hanging on the walls, small red-tiled roofs, small arched blue doors. Daylight, soft light from the upper left.
+
+LAYOUT: landscape 2:1 image, a grid of 4 columns x 2 rows. Every piece is drawn ORTHOGRAPHIC: perfectly straight-on front elevation, no perspective, no vanishing points. All pieces exactly the same height and scale, sitting on one invisible baseline, with straight vertical left and right edges so they can be placed side by side:
+1. A plain wall section that repeats seamlessly left to right.
+2. A wall with an arched front door.
+3. A wall with two shuttered windows.
+4. A wall with a wooden balcony and carved lattice railing.
+5. A taller corner tower piece.
+6. A rooftop edge strip that repeats seamlessly left to right.
+7. A shop front with an awning.
+8. A set of small separate details: a lantern on a wall bracket, two potted plants, a small hanging carpet.
+
+No people, no animals, no text.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="bg-chefchaouen"><div class="top"><label class="done"><input type="checkbox" id="done-bg-chefchaouen" data-id="bg-chefchaouen"><span>Chefchaouen: far background</span></label><span class="role bg">Background</span><button type="button" class="copy" data-target="p-bg-chefchaouen">Copy prompt</button></div><pre id="p-bg-chefchaouen" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+BACKGROUND RULES: a very wide panorama, landscape 3:1. Far background only: sky and distant scenery. No characters, no animals in front, no text, no frame, no buildings cut at the left or right edge. The left and right edges must match perfectly so the image repeats seamlessly side by side. The bottom 15% fades into one flat, even band of soft sky blue so the game&#x27;s street can sit in front of it.
+
+SUBJECT: the far background of the Chefchaouen district: a blue-and-white town stacked up a green mountainside, the Rif mountains behind, a small white minaret, a bright blue sky.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="kit-desert"><div class="top"><label class="done"><input type="checkbox" id="done-kit-desert" data-id="kit-desert"><span>Desert: building kit</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-kit-desert">Copy prompt</button></div><pre id="p-kit-desert" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every piece is complete and nothing is cropped, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: modular building pieces for the Desert district of a Moroccan medina, used to build a 3D street. Materials and colors: mud-brick kasbah walls of rough hand-smoothed earth, tapered towers with carved triangle patterns, palm-wood beams sticking out of the walls, small dark square windows with no shutters, crenellated tops, a simple wooden palm-trunk door, woven palm-leaf mats, a clay water jar. This is a DESERT village, NOT a city street: NO zellige tiles, NO green roof tiles, NO carved stucco arches, NO flowers or bougainvillea, NO striped awnings, NO wrought-iron lanterns. Do not copy the layout of any other kit. Daylight, soft light from the upper left.
+
+LAYOUT: landscape 2:1 image, a grid of 4 columns x 2 rows. Every piece is drawn ORTHOGRAPHIC: perfectly straight-on front elevation, no perspective, no vanishing points. All pieces exactly the same height and scale, sitting on one invisible baseline, with straight vertical left and right edges so they can be placed side by side:
+1. A plain wall section that repeats seamlessly left to right.
+2. A wall with an arched front door.
+3. A wall with two shuttered windows.
+4. A wall with a wooden balcony and carved lattice railing.
+5. A taller corner tower piece.
+6. A rooftop edge strip that repeats seamlessly left to right.
+7. A shop front with an awning.
+8. A set of small separate details: a lantern on a wall bracket, two potted plants, a small hanging carpet.
+
+No people, no animals, no text.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="bg-desert"><div class="top"><label class="done"><input type="checkbox" id="done-bg-desert" data-id="bg-desert"><span>Desert: far background</span></label><span class="role bg">Background</span><button type="button" class="copy" data-target="p-bg-desert">Copy prompt</button></div><pre id="p-bg-desert" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+BACKGROUND RULES: a very wide panorama, landscape 3:1. Far background only: sky and distant scenery. No characters, no animals in front, no text, no frame, no buildings cut at the left or right edge. The left and right edges must match perfectly so the image repeats seamlessly side by side. The bottom 15% fades into one flat, even band of golden sand so the game&#x27;s street can sit in front of it.
+
+SUBJECT: the far background of the Desert district: golden sand dunes at sunset, a ksar of tapered mud-brick towers, an oasis of palm trees, a big low sun in a purple-orange sky.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="kit-coast"><div class="top"><label class="done"><input type="checkbox" id="done-kit-coast" data-id="kit-coast"><span>Coast: building kit</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-kit-coast">Copy prompt</button></div><pre id="p-kit-coast" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every piece is complete and nothing is cropped, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: modular building pieces for the Coast district of a Moroccan medina, used to build a 3D street. Materials and colors: white-washed walls with Majorelle-blue shutters and doors, thick stone ramparts with crenellations, fishing nets, small blue wooden boats leaning on the walls. Daylight, soft light from the upper left.
+
+LAYOUT: landscape 2:1 image, a grid of 4 columns x 2 rows. Every piece is drawn ORTHOGRAPHIC: perfectly straight-on front elevation, no perspective, no vanishing points. All pieces exactly the same height and scale, sitting on one invisible baseline, with straight vertical left and right edges so they can be placed side by side:
+1. A plain wall section that repeats seamlessly left to right.
+2. A wall with an arched front door.
+3. A wall with two shuttered windows.
+4. A wall with a wooden balcony and carved lattice railing.
+5. A taller corner tower piece.
+6. A rooftop edge strip that repeats seamlessly left to right.
+7. A shop front with an awning.
+8. A set of small separate details: a lantern on a wall bracket, two potted plants, a small hanging carpet.
+
+No people, no animals, no text.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="bg-coast"><div class="top"><label class="done"><input type="checkbox" id="done-bg-coast" data-id="bg-coast"><span>Coast: far background</span></label><span class="role bg">Background</span><button type="button" class="copy" data-target="p-bg-coast">Copy prompt</button></div><pre id="p-bg-coast" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+BACKGROUND RULES: a very wide panorama, landscape 3:1. Far background only: sky and distant scenery. No characters, no animals in front, no text, no frame, no buildings cut at the left or right edge. The left and right edges must match perfectly so the image repeats seamlessly side by side. The bottom 15% fades into one flat, even band of pale sandy stone so the game&#x27;s street can sit in front of it.
+
+SUBJECT: the far background of the Coast district: the Atlantic ocean, a white coastal town behind stone ramparts, a white-and-red lighthouse, seagulls, a bright clear sky.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="kit-night"><div class="top"><label class="done"><input type="checkbox" id="done-kit-night" data-id="kit-night"><span>Night (Marrakech): building kit</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-kit-night">Copy prompt</button></div><pre id="p-kit-night" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every piece is complete and nothing is cropped, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: modular building pieces for the Night (Marrakech) district of a Moroccan medina, used to build a 3D street. Materials and colors: the same terracotta Marrakech walls, green-tiled roof edges, carved doors and brass lanterns. Night lighting: deep moonlit blue shading, every window glowing warm yellow, lanterns lit.
+
+LAYOUT: landscape 2:1 image, a grid of 4 columns x 2 rows. Every piece is drawn ORTHOGRAPHIC: perfectly straight-on front elevation, no perspective, no vanishing points. All pieces exactly the same height and scale, sitting on one invisible baseline, with straight vertical left and right edges so they can be placed side by side:
+1. A plain wall section that repeats seamlessly left to right.
+2. A wall with an arched front door.
+3. A wall with two shuttered windows.
+4. A wall with a wooden balcony and carved lattice railing.
+5. A taller corner tower piece.
+6. A rooftop edge strip that repeats seamlessly left to right.
+7. A shop front with an awning.
+8. A set of small separate details: a lantern on a wall bracket, two potted plants, a small hanging carpet.
+
+No people, no animals, no text.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="bg-night"><div class="top"><label class="done"><input type="checkbox" id="done-bg-night" data-id="bg-night"><span>Night (Marrakech): far background</span></label><span class="role bg">Background</span><button type="button" class="copy" data-target="p-bg-night">Copy prompt</button></div><pre id="p-bg-night" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+BACKGROUND RULES: a very wide panorama, landscape 3:1. Far background only: sky and distant scenery. No characters, no animals in front, no text, no frame, no buildings cut at the left or right edge. The left and right edges must match perfectly so the image repeats seamlessly side by side. The bottom 15% fades into one flat, even band of deep navy blue so the game&#x27;s street can sit in front of it.
+
+SUBJECT: the far background of the Night (Marrakech) district: Marrakech at night: a big bright moon, many stars, the tall minaret lit in warm gold, glowing windows across the medina, a deep navy sky.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article></section><section class="group" id="icons"><header class="ghead"><h2>Pickups and icons</h2><p>Coins, power-ups and the round icons for the screen.</p></header><article class="card" data-id="icons-all"><div class="top"><label class="done"><input type="checkbox" id="done-icons-all" data-id="icons-all"><span>Pickups and icons</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-icons-all">Copy prompt</button></div><pre id="p-icons-all" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, every icon fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: collectible items and round interface icons for a Moroccan runner game.
+
+LAYOUT: square 1:1 image, a grid of 4 columns x 4 rows, one item per cell, all at the same size:
+Row 1: a gold coin with an eight-pointed Moroccan star seen from the front; the same coin turned 45 degrees; the same coin seen edge-on; a pile of three gold coins.
+Row 2: a blue shield inside a soap-bubble (power-up); a glass of mint tea with fresh mint leaves inside a soap-bubble (power-up); a golden crown; a pause button made of carved wood.
+Row 3: four round brass medallion icons: a flame (fire), a water drop (wave), a sand swirl (dash), a green crystal (smash).
+Row 4: a fifth round brass medallion with a crescent moon and a star (starlight); an empty round brass power-meter ring; the same ring half filled with glowing orange; the same ring completely full and glowing.
+
+No text, no numbers.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article><article class="card" data-id="icons-powerups-fix"><div class="top"><label class="done"><input type="checkbox" id="done-icons-powerups-fix" data-id="icons-powerups-fix"><span>Power-ups without bubbles (fix)</span></label><span class="role ">Game picture</span><button type="button" class="copy" data-target="p-icons-powerups-fix">Copy prompt</button></div><pre id="p-icons-powerups-fix" class="prompt" tabindex="0">STYLE: polished mobile-game art in a classic hand-drawn Arabian-adventure cartoon style: bold clean dark-brown outlines, warm saturated colors, soft cel shading, expressive faces, playful proportions (big heads, big eyes). Moroccan details: zellige tiles, fez, djellaba, babouche slippers, brass, Berber carpet patterns. Palette: terracotta, saffron gold, Majorelle blue, mint green, deep red, cream.
+
+GAME-ASSET RULES (most important): one solid, flat, even light-grey background (#D9D9D9) across the whole image. No scenery, no buildings, no sky, no ground, no floor shadow, no frame, no border, no ornaments, no text, no labels, no numbers, no watermark. Every view is complete: nothing cropped, every item fully inside the image, with wide empty grey space around and between views so each one can be cut out cleanly. All views at exactly the same scale, same soft light from the upper left, same line thickness, each centered in its own cell, views never overlap.
+
+SUBJECT: two power-up items for a Moroccan runner game, matching the attached icon sheet exactly in style, colours and size.
+
+LAYOUT: landscape 2:1 image, two items side by side, same size: 1. the blue shield with a gold rim and a gold eight-pointed star; 2. the glass of mint tea with fresh mint leaves. NO soap bubble, NO glow, NO sparkles around them: the game draws the bubble itself.
+
+No text, no numbers.
+
+REFERENCE: if an image is attached, match its art style, colors and level of detail exactly.</pre></article></section>
+</main>
+<script>
+(function () {
+  var KEY = 'bellarej2-prompt-kit';
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('.done input'));
+  function render() {
+    var n = 0;
+    boxes.forEach(function (b) { var on = !!state[b.dataset.id]; b.checked = on; b.closest('.card').classList.toggle('is-done', on); if (on) n++; });
+    document.getElementById('n-done').textContent = n;
+    document.getElementById('meter').style.width = (100 * n / boxes.length) + '%';
+  }
+  boxes.forEach(function (b) { b.addEventListener('change', function () { state[b.dataset.id] = b.checked; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} render(); }); });
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pre = document.getElementById(btn.dataset.target), text = pre.textContent;
+      function done() { btn.textContent = 'Copied'; btn.classList.add('ok'); setTimeout(function () { btn.textContent = 'Copy prompt'; btn.classList.remove('ok'); }, 1600); }
+      function fallback() { var r = document.createRange(); r.selectNodeContents(pre); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Selected: copy it'; }
+      try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+    });
+  });
+  render();
+})();
+</script>
